@@ -1,3 +1,3 @@
-{"TrgId_1" 	: {"TrgType":"json","TrgLocation":"../trgLoc/","FileSystem":"local" },
- "TrgId_2"	: {"TrgType":"parquet","TrgLocation":"../trgLoc/","FileSystem":"local" }        
+{"DestId_1" 	: {"DestType":"json","DestLocation":"../trgLoc/","FileSystem":"local" },
+ "DestId_2"	: {"DestType":"parquet","DestLocation":"../trgLoc/","FileSystem":"local" }        
 }
