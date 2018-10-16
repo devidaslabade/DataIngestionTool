@@ -1,0 +1,3 @@
+{"SrcId_1" 	: {"SrcType":"csv","SrcLocation":"../srcLoc/","FileSystem":"local" },
+ "SrcId_2"	: {"SrcType":"csv","SrcLocation":"../srcLoc/","FileSystem":"local" }        
+}

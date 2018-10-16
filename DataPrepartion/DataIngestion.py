@@ -1,0 +1,65 @@
+from pyspark.sql import SparkSession
+import json
+from pprint import pprint
+from pyspark.sql.types import *
+#from pyspark.sql.types import StructType, StructField
+#from pyspark.sql.types import DoubleType, IntegerType, StringType
+
+
+def fetchSchema(srcCols):
+    print("Fetching schema values of ",srcCols)
+    fields=[]
+    for clm in srcCols :
+        print(clm['isNullable'])
+        if clm['colType'] == "String" :
+            colField =StructField(clm['colName'], StringType(), eval(clm['isNullable']))
+            fields.append(colField)
+        elif clm['colType'] == "Integer" :
+            colField =StructField(clm['colName'], IntegerType(), eval(clm['isNullable']))
+            fields.append(colField)
+        else :
+            colField =StructField(clm['colName'], StringType(), eval(clm['isNullable']))
+            fields.append(colField)
+    return fields
+
+def launchSpark(srcPath,schema,trgt):
+    spark = SparkSession.builder.appName("DataIngestion").getOrCreate()
+    #df=spark.read.csv(srcPath)
+    df=spark.read.schema(schema).option("header", "true").csv(srcPath)
+    df.show()
+    df.printSchema()
+    print(trgt)
+    print(trgt["TrgLocation"]+"/"+trgt["TrgType"])
+    df.write.mode('overwrite').format(trgt["TrgType"]).save(trgt["TrgLocation"]+"/"+trgt["TrgType"])
+    
+    #orc_df.write.orc(
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if __name__ == "__main__" :
+    src = json.loads(open('..\source\src.json', encoding='utf-8').read())
+    srcColMap = json.loads(open('..\source\srcColMap.json', encoding='utf-8').read())
+    dest = json.loads(open('..\dest\dest.json', encoding='utf-8').read())
+    prc = json.loads(open('..\process\prc.json', encoding='utf-8').read())
+    #pprint(json)
+    for key, value in prc.items():
+        print(value['PrcName'])
+        #fields = [StructField(x['colName'], StringType(), False) for x in srcColMap[key]]
+        fields=fetchSchema(srcColMap[value['SrcId']])             
+        schema = StructType(fields)
+                
+        launchSpark(src[value['SrcId']]['SrcLocation'],schema,dest[value['TrgId']])
+
+    
