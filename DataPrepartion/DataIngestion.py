@@ -22,15 +22,15 @@ def fetchSchema(srcCols):
             fields.append(colField)
     return fields
 
-def launchSpark(srcPath,schema,trgt):
+def launchSpark(src,schema,trgt):
     spark = SparkSession.builder.appName("DataIngestion").getOrCreate()
-    #df=spark.read.csv(srcPath)
-    df=spark.read.schema(schema).option("header", "true").csv(srcPath)
-    df.show()
-    df.printSchema()
-    print(trgt)
-    print(trgt["TrgLocation"]+"/"+trgt["TrgType"])
-    df.write.mode('overwrite').format(trgt["TrgType"]).save(trgt["TrgLocation"]+"/"+trgt["TrgType"])
+    if src['SrcType'] == "csv" :
+        df=spark.read.schema(schema).option("header",src['Header'] ).csv(src['SrcLocation'])
+        df.show()
+        df.printSchema()
+        print(trgt)
+        print(trgt["TrgLocation"]+"/"+trgt["TrgType"])
+        df.write.mode('overwrite').format(trgt["TrgType"]).save(trgt["TrgLocation"]+"/"+trgt["TrgType"])
     
     #orc_df.write.orc(
 
@@ -54,12 +54,12 @@ if __name__ == "__main__" :
     dest = json.loads(open('..\dest\dest.json', encoding='utf-8').read())
     prc = json.loads(open('..\process\prc.json', encoding='utf-8').read())
     #pprint(json)
-    for key, value in prc.items():
-        print(value['PrcName'])
+    for prcKey, prcVal in prc.items():
+        print(prcVal['PrcName'])
         #fields = [StructField(x['colName'], StringType(), False) for x in srcColMap[key]]
-        fields=fetchSchema(srcColMap[value['SrcId']])             
+        fields=fetchSchema(srcColMap[prcVal['SrcId']])             
         schema = StructType(fields)
-                
-        launchSpark(src[value['SrcId']]['SrcLocation'],schema,dest[value['TrgId']])
+        launchSpark(src[prcVal['SrcId']],schema,dest[prcVal['TrgId']])        
+        #launchSpark(src[value['SrcId']]['SrcLocation'],schema,dest[value['TrgId']])
 
     
