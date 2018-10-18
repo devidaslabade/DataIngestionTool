@@ -1,11 +1,11 @@
 { "cm_1" :[
-    { "srcId":"category_id","srcColId":"Integer","destId":"True","destColId":"1"},
-    { "colName":"category_department_id","colType":"Integer","isNullable":"True","colPos":"2"},
-    { "colName":"category_name","colType":"String","isNullable":"False","colPos":"3"}
+    { "srcId":"SrcId_1","srcColId":"1","destId":"DestId_1","destColId":"1"},
+    { "srcId":"SrcId_1","srcColId":"2","destId":"DestId_1","destColId":"2"},
+   { "srcId":"SrcId_1","srcColId":"3","destId":"DestId_1","destColId":"3"}
   ],
   "cm_2" :[
-    { "colName":"category_id","colType":"Integer","isNullable":"True","colPos":"1"},
-    { "colName":"category_department_id","colType":"Integer","isNullable":"True","colPos":"2"},
-    { "colName":"category_name","colType":"String","isNullable":"False","colPos":"3"}
+    { "srcId":"SrcId_2","srcColId":"1","destId":"DestId_2","destColId":"1"},
+    { "srcId":"SrcId_2","srcColId":"2","destId":"DestId_2","destColId":"2"},
+    { "srcId":"SrcId_2","srcColId":"3","destId":"DestId_2","destColId":"3"}
   ]
 }

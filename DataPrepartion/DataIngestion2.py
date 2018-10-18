@@ -1,5 +1,6 @@
 from pyspark.sql import SparkSession
 import json
+import pandas as pd
 from pprint import pprint
 from pyspark.sql.types import *
 #from pyspark.sql.types import StructType, StructField
@@ -9,8 +10,7 @@ from pyspark.sql.types import *
 def fetchSchema(srcCols):
     print("Fetching schema values of ",srcCols)
     fields=[]
-    for clm in srcCols :
-        print(clm['isNullable'])
+    for idx,clm in srcCols.iterrows() :
         if clm['colType'] == "String" :
             colField =StructField(clm['colName'], StringType(), eval(clm['isNullable']))
             fields.append(colField)
@@ -23,15 +23,21 @@ def fetchSchema(srcCols):
     return fields
 
 def launchSpark(src,schema,trgt):
+    print(type(src))
+    print(type(src['SrcType']=='csv'))
+    print(type(schema))
+    print(schema)
+    print(type(trgt))
+    print(trgt['DestLocation'])
     spark = SparkSession.builder.appName("DataIngestion").getOrCreate()
-    if src['SrcType'] == "csv" :
-        df=spark.read.schema(schema).option("header",src['Header'] ).csv(src['SrcLocation'])
+    #TODO find alternative to any and restrict it to one row using tail head etc
+    if src['SrcType'].any() =='csv' :
+        df=spark.read.schema(schema).option("header",src['Header'].any() ).csv(src['SrcLocation'].any())
         df.show()
         df.printSchema()
         print(trgt)
-        print(trgt["DestLocation"]+"/"+trgt["DestType"])
-        
-        df.write.mode('overwrite').format(trgt["DestType"]).save(trgt["DestLocation"]+"/"+trgt["DestType"])
+        #print(trgt["DestLocation"]+"/"+trgt["DestType"])        
+        df.write.mode('overwrite').format(trgt["DestType"].any()).save(trgt["DestLocation"].any()+"/"+trgt["DestType"].any())
     
     #orc_df.write.orc(
 
@@ -50,17 +56,19 @@ def launchSpark(src,schema,trgt):
 
 
 if __name__ == "__main__" :
-    src = json.loads(open('..\source\src.json', encoding='utf-8').read())
-    srcColMap = json.loads(open('..\source\srcCols.json', encoding='utf-8').read())
-    dest = json.loads(open('..\dest\dest.json', encoding='utf-8').read())
-    prc = json.loads(open('..\process\prc.json', encoding='utf-8').read())
-    #pprint(json)
-    for prcKey, prcVal in prc.items():
-        print(prcVal['PrcName'])
+    src = pd.read_json('..\source\src.json')
+    srcColMap = pd.read_json('..\source\srcCols.json')
+    dest = pd.read_json('..\dest\dest.json')
+    prc = pd.read_json('..\process\prc.json')
+    #pprint(prc)
+    for prcIdx, prcRow in prc.iterrows():
         #fields = [StructField(x['colName'], StringType(), False) for x in srcColMap[key]]
-        fields=fetchSchema(srcColMap[prcVal['SrcId']])             
+        fields=fetchSchema(srcColMap[srcColMap['SrcId']==prcRow['SrcId']])             
         schema = StructType(fields)
-        launchSpark(src[prcVal['SrcId']],schema,dest[prcVal['DestId']])        
+        launchSpark(src[src['SrcId']==prcRow['SrcId']],schema,dest[dest['DestId']==prcRow['DestId']])        
+        
+        
+        
         #launchSpark(src[value['SrcId']]['SrcLocation'],schema,dest[value['TrgId']])
 
     
