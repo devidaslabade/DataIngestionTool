@@ -1,0 +1,3 @@
+[
+  {"DestId":"DestId_2","DestType":"parquet","DestLocation":"../trgLoc/","FileSystem":"local" }
+]

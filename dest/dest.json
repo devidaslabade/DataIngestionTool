@@ -1,5 +1,4 @@
-{"DestId_1" : {"DestType":"json","DestLocation":"../trgLoc/","FileSystem":"local" },
- "DestId_2"	: {"DestType":"parquet","DestLocation":"../trgLoc/","FileSystem":"local" },
- "DestId_3"	: {"DestType":"orc","DestLocation":"../trgLoc/","FileSystem":"local"},
- "DestId_4"	: {"DestType":"csv","DestLocation":"../trgLoc/","FileSystem":"local"}
-}
+[ {"DestId":"DestId_1","DestType":"json","DestLocation":"../trgLoc/","FileSystem":"local" },
+ {"DestId":"DestId_2","DestType":"parquet","DestLocation":"../trgLoc/","FileSystem":"local" }        
+]
+

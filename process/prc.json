@@ -1,5 +1,5 @@
-{"PrcId_1" 	: { "PrcName":"TestDump_1","isActive":"True","SrcId":"SrcId_1","DestId":"DestId_1" },
- "PrcId_2"	: { "PrcName":"TestDump_2","isActive":"True","SrcId":"SrcId_2","DestId":"DestId_2" },
- "PrcId_3"	: { "PrcName":"TestDump_3","isActive":"True","SrcId":"SrcId_2","DestId":"DestId_3" },
- "PrcId_4"	: { "PrcName":"TestDump_4","isActive":"True","SrcId":"SrcId_2","DestId":"DestId_4" }
-}  
+[
+{"PrcId" : "PrcId_1", "PrcName":"TestDump_1","isActive":"True","SrcId":"SrcId_1","DestId":"DestId_1","ColMapping":"cm_1" },
+{"PrcId":"PrcId_2", "PrcName":"TestDump_2","isActive":"True","SrcId":"SrcId_2","DestId":"DestId_2" ,"ColMapping":"cm_2"}       
+]
+

@@ -1,0 +1,5 @@
+[
+  { "SrcId":"SrcId_1","colName":"category_id","colType":"Integer","isNullable":"True","colPos":"1","colId":"1"},
+  { "SrcId":"SrcId_1","colName":"category_department_id","colType":"Integer","isNullable":"True","colPos":"2","colId":"2"},
+  { "SrcId":"SrcId_1","colName":"category_name","colType":"String","isNullable":"False","colPos":"3","colId":"3"}
+]
