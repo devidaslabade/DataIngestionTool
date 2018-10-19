@@ -5,17 +5,17 @@ Created on Tue Oct 16 17:46:25 2018
 @author: aj250046
 """
 
-from pyspark.sql import SparkSession
+
 import json
 import pandas as pd
 
             
-src = pd.read_json('..\source\src.json')
-srcColMap = pd.read_json('..\source\srcCols.json')
-dest = pd.read_json('..\dest\dest.json')
-destColMap = pd.read_json('..\dest\destCols.json')
-prc = pd.read_json('..\process\prc.json')
-maps = pd.read_json('..\process\colMapping.json')
+src = pd.read_json('..\..\config\source\src.json')
+srcColMap = pd.read_json('..\..\config\source\srcCols.json')
+dest = pd.read_json('..\..\config\dest\dest.json')
+destColMap = pd.read_json('..\..\config\dest\destCols.json')
+prc = pd.read_json('..\..\config\process\prc.json')
+maps = pd.read_json('..\..\config\process\colMapping.json')
 
 #print(srcColMap)
 
