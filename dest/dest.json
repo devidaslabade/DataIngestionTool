@@ -1,3 +1,5 @@
 [ {"destId":"DestId_1","DestType":"json","DestLocation":"../trgLoc/","FileSystem":"local" },
  {"destId":"DestId_2","DestType":"parquet","DestLocation":"../trgLoc/","FileSystem":"local" }        
 ]
+
+
