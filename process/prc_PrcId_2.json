@@ -1,3 +1,3 @@
 [
-{"PrcId":"PrcId_2", "PrcName":"TestDump_2","isActive":"True","SrcId":"SrcId_2","DestId":"DestId_2" ,"ColMapping":"cm_2"}
+{"prcId" : "PrcId_2", "prcName":"TestDump_2","isActive":"True","mapId":"cm_2" }
 ]

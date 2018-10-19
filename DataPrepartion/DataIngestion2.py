@@ -1,5 +1,6 @@
 from pyspark.sql import SparkSession
 import json
+import glob
 import pandas as pd
 from pprint import pprint
 from pyspark.sql.types import *
@@ -53,31 +54,42 @@ def launchSpark(srcMap,schemaMap,trgtMap,query):
 
 
 if __name__ == "__main__" :
-    src = pd.read_json('..\source\src.json')
-    srcColMap = pd.read_json('..\source\srcCols.json')
-    dest = pd.read_json('..\dest\dest.json')
-    destColMap = pd.read_json('..\dest\destCols.json')
-    prc = pd.read_json('..\process\prc.json')
-    maps = pd.read_json('..\process\colMapping.json')
-    #pprint(prc)
-    for prcIdx, prcRow in prc[prc['isActive']=="True"].iterrows():
-        query=[]
-        schemaMap={}
-        srcMap={}
-        destMap={}
-        mapTab=maps[maps['mapId']==prcRow['mapId']]
-        #print(mapTab)
-        for mapId,mapRow in mapTab.iterrows() :
-            srcCol=srcColMap[(srcColMap['srcId']== mapRow['srcId']) & (srcColMap['colId']== mapRow['srcColId'])]
-            destCol=destColMap[(destColMap['destId']== mapRow['destId']) & (destColMap['colId']== mapRow['destColId'])]
-            query.append(srcCol['colName'].str.cat()+" as "+destCol['colName'].str.cat())
-            ##Fetch schema of the sources
-            if mapRow['srcId'] in schemaMap:
-                print("skipping the block")
-            else :
-                fields=fetchSchema(srcColMap[srcColMap['srcId']== mapRow['srcId']])             
-                schema = StructType(fields)
-                schemaMap[mapRow['srcId']]=schema
-                srcMap[mapRow['srcId']]=src[src['srcId']==mapRow['srcId']]
-                destMap[mapRow['destId']]=dest[dest['destId']==mapRow['destId']]
-        launchSpark(srcMap,schemaMap,destMap,query)        
+    #src = pd.read_json('..\source\src.json')
+    #srcColMap = pd.read_json('..\source\srcCols.json')
+    #dest = pd.read_json('..\dest\dest.json')
+    #destColMap = pd.read_json('..\dest\destCols.json')
+    #prc = pd.read_json('..\process\prc.json')
+    #maps = pd.read_json('..\process\colMapping.json')
+    #pprint(prc)prc_PrcId_1
+    #Read Process files in iteration
+    for prcFile in glob.glob('..\process\prc_PrcId_[0-9].json'):
+        prc = pd.read_json(prcFile)
+        for prcIdx, prcRow in prc[prc['isActive']=="True"].iterrows():
+            query=[]
+            schemaMap={}
+            srcMap={}
+            destMap={}
+            #Fetch process Id specific mapping file
+            maps = pd.read_json('..\process\colMapping_'+prcRow['mapId']+'.json')
+            mapTab=maps[maps['mapId']==prcRow['mapId']]
+            #print(mapTab)
+            for mapId,mapRow in mapTab.iterrows() :
+                #Fetch source and destination column mapping files
+                srcColMap = pd.read_json('..\source\srcCols_'+mapRow['srcId']+'.json')
+                destColMap = pd.read_json('..\dest\destCols_'+mapRow['destId']+'.json')
+                srcCol=srcColMap[(srcColMap['srcId']== mapRow['srcId']) & (srcColMap['colId']== mapRow['srcColId'])]                
+                destCol=destColMap[(destColMap['destId']== mapRow['destId']) & (destColMap['colId']== mapRow['destColId'])]
+                query.append(srcCol['colName'].str.cat()+" as "+destCol['colName'].str.cat())
+                ##Fetch schema of the sources
+                if mapRow['srcId'] in schemaMap:
+                    print("skipping the block")
+                else :
+                    fields=fetchSchema(srcColMap[srcColMap['srcId']== mapRow['srcId']])             
+                    schema = StructType(fields)
+                    schemaMap[mapRow['srcId']]=schema
+                    #Fetch source and destination details
+                    src = pd.read_json('..\source\src_'+mapRow['srcId']+'.json')
+                    dest = pd.read_json('..\dest\dest_'+mapRow['destId']+'.json')
+                    srcMap[mapRow['srcId']]=src[src['srcId']==mapRow['srcId']]
+                    destMap[mapRow['destId']]=dest[dest['destId']==mapRow['destId']]
+            launchSpark(srcMap,schemaMap,destMap,query)        
