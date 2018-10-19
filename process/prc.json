@@ -1,4 +1,4 @@
 [
-{"PrcId" : "PrcId_1", "PrcName":"TestDump_1","isActive":"True","SrcId":"SrcId_1","DestId":"DestId_1","ColMapping":"cm_1" },
-{"PrcId":"PrcId_2", "PrcName":"TestDump_2","isActive":"True","SrcId":"SrcId_2","DestId":"DestId_2" ,"ColMapping":"cm_2"}       
+{"PrcId" : "PrcId_1", "PrcName":"TestDump_1","isActive":"True","mapId":"cm_1" },
+{"PrcId" : "PrcId_2", "PrcName":"TestDump_2","isActive":"True","mapId":"cm_2"}       
 ]

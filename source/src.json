@@ -1,4 +1,4 @@
 [ 
-{"SrcId":"SrcId_1","SrcType":"csv","SrcLocation":"../srcLoc/","FileSystem":"local","Header":"true" },
-{"SrcId":"SrcId_2","SrcType":"csv","SrcLocation":"../srcLoc/","FileSystem":"local","Header":"true"} 
+{"srcId":"SrcId_1","SrcType":"csv","SrcLocation":"../srcLoc/","FileSystem":"local","Header":"true" },
+{"srcId":"SrcId_2","SrcType":"csv","SrcLocation":"../srcLoc/","FileSystem":"local","Header":"true"} 
 ]       

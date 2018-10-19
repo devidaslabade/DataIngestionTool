@@ -8,7 +8,7 @@ from pyspark.sql.types import *
 
 
 def fetchSchema(srcCols):
-    print("Fetching schema values of ",srcCols)
+    print("Fetching schema values of ",srcCols['srcId'].head(1))
     fields=[]
     for idx,clm in srcCols.iterrows() :
         if clm['colType'] == "String" :
@@ -22,22 +22,19 @@ def fetchSchema(srcCols):
             fields.append(colField)
     return fields
 
-def launchSpark(src,schema,trgt):
-    print(type(src))
-    print(type(src['SrcType']=='csv'))
-    print(type(schema))
-    print(schema)
-    print(type(trgt))
-    print(trgt['DestLocation'])
+def launchSpark(srcMap,schemaMap,trgtMap,query):
     spark = SparkSession.builder.appName("DataIngestion").getOrCreate()
     #TODO find alternative to any and restrict it to one row using tail head etc
-    if src['SrcType'].any() =='csv' :
-        df=spark.read.schema(schema).option("header",src['Header'].any() ).csv(src['SrcLocation'].any())
-        df.show()
-        df.printSchema()
-        print(trgt)
-        #print(trgt["DestLocation"]+"/"+trgt["DestType"])        
-        df.write.mode('overwrite').format(trgt["DestType"].any()).save(trgt["DestLocation"].any()+"/"+trgt["DestType"].any())
+    ##If source and destination has one entries both side
+    for srcKey,src in srcMap.items() :
+        print(src)
+        if src['SrcType'].any() =='csv' :
+            df=spark.read.schema(schema).option("header",src['Header'].any() ).csv(src['SrcLocation'].any())
+            df.show()
+            df.printSchema()
+            for destKey,dest in trgtMap.items() :
+                print(query)
+                df.selectExpr(query).write.mode('overwrite').format(dest["DestType"].any()).save(dest["DestLocation"].any()+"/"+dest["DestType"].any())
     
     #orc_df.write.orc(
 
@@ -59,16 +56,28 @@ if __name__ == "__main__" :
     src = pd.read_json('..\source\src.json')
     srcColMap = pd.read_json('..\source\srcCols.json')
     dest = pd.read_json('..\dest\dest.json')
+    destColMap = pd.read_json('..\dest\destCols.json')
     prc = pd.read_json('..\process\prc.json')
+    maps = pd.read_json('..\process\colMapping.json')
     #pprint(prc)
-    for prcIdx, prcRow in prc.iterrows():
-        #fields = [StructField(x['colName'], StringType(), False) for x in srcColMap[key]]
-        fields=fetchSchema(srcColMap[srcColMap['SrcId']==prcRow['SrcId']])             
-        schema = StructType(fields)
-        launchSpark(src[src['SrcId']==prcRow['SrcId']],schema,dest[dest['DestId']==prcRow['DestId']])        
-        
-        
-        
-        #launchSpark(src[value['SrcId']]['SrcLocation'],schema,dest[value['TrgId']])
-
-    
+    for prcIdx, prcRow in prc[prc['isActive']=="True"].iterrows():
+        query=[]
+        schemaMap={}
+        srcMap={}
+        destMap={}
+        mapTab=maps[maps['mapId']==prcRow['mapId']]
+        #print(mapTab)
+        for mapId,mapRow in mapTab.iterrows() :
+            srcCol=srcColMap[(srcColMap['srcId']== mapRow['srcId']) & (srcColMap['colId']== mapRow['srcColId'])]
+            destCol=destColMap[(destColMap['destId']== mapRow['destId']) & (destColMap['colId']== mapRow['destColId'])]
+            query.append(srcCol['colName'].str.cat()+" as "+destCol['colName'].str.cat())
+            ##Fetch schema of the sources
+            if mapRow['srcId'] in schemaMap:
+                print("skipping the block")
+            else :
+                fields=fetchSchema(srcColMap[srcColMap['srcId']== mapRow['srcId']])             
+                schema = StructType(fields)
+                schemaMap[mapRow['srcId']]=schema
+                srcMap[mapRow['srcId']]=src[src['srcId']==mapRow['srcId']]
+                destMap[mapRow['destId']]=dest[dest['destId']==mapRow['destId']]
+        launchSpark(srcMap,schemaMap,destMap,query)        

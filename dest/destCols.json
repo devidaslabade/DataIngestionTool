@@ -1,12 +1,9 @@
 [
-	[
-	{ "DestId":"DestId_1","colName":"category_id","colType":"Integer","isNullable":"True","colPos":"1","colId":"1"},
-	{ "DestId":"DestId_1","colName":"category_department_id","colType":"Integer","isNullable":"True","colPos":"2","colId":"2"},
-	{ "DestId":"DestId_1","colName":"category_name","colType":"String","isNullable":"False","colPos":"3","colId":"3"}
-  	],
-	[
-	{ "DestId":"DestId_2","colName":"category_id","colType":"Integer","isNullable":"True","colPos":"1","colId":"1"},
-	{ "DestId":"DestId_2","colName":"category_department_id","colType":"Integer","isNullable":"True","colPos":"2","colId":"2"},
-	{ "DestId":"DestId_3","colName":"category_name","colType":"String","isNullable":"False","colPos":"3","colId":"3"}
-  	]
+	{ "destId":"DestId_1","colName":"cat_id","colType":"Integer","isNullable":"True","colPos":"1","colId":"1"},
+	{ "destId":"DestId_1","colName":"cat_dpt_id","colType":"Integer","isNullable":"True","colPos":"2","colId":"2"},
+	{ "destId":"DestId_1","colName":"cat_name","colType":"String","isNullable":"False","colPos":"3","colId":"3"},
+	{ "destId":"DestId_2","colName":"cat_id","colType":"Integer","isNullable":"True","colPos":"1","colId":"1"},
+	{ "destId":"DestId_2","colName":"cat_dpt_id","colType":"Integer","isNullable":"True","colPos":"2","colId":"2"},
+	{ "destId":"DestId_2","colName":"cat_name","colType":"String","isNullable":"False","colPos":"3","colId":"3"}
+
 ]	
