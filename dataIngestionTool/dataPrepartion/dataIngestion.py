@@ -48,8 +48,7 @@ def launchSpark(srcMap,schemaMap,trgtMap,query):
             for destKey,dest in trgtMap.items() :
                 print(query)
                 df.selectExpr(query).write.mode(dest["mode"].any()).format(dest["fileType"].any()).save(dest["destLocation"].any()+"/"+dest["fileType"].any())
-    
-    #orc_df.write.orc(
+
 
 
 
