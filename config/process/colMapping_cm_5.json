@@ -1,0 +1,5 @@
+[
+    { "mapId":"cm_5","srcId":"SrcId_5","srcColId":"1","destId":"DestId_5","destColId":"1"},
+    { "mapId":"cm_5","srcId":"SrcId_5","srcColId":"2","destId":"DestId_5","destColId":"2"},
+    { "mapId":"cm_5","srcId":"SrcId_5","srcColId":"3","destId":"DestId_5","destColId":"3"}
+]
