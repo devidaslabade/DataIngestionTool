@@ -10,14 +10,13 @@ except:
     findspark.init()
     import pyspark
 #from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession
 from pyspark.sql.types import *
 #from pyspark.sql.types import StructType, StructField
 #from pyspark.sql.types import DoubleType, IntegerType, StringType
 from configparser import ConfigParser
 # instantiate
 config = ConfigParser()
-
-
 
 def fetchSchema(srcCols):
     print("Fetching schema values of ",srcCols['srcId'].head(1))
@@ -35,20 +34,38 @@ def fetchSchema(srcCols):
     return fields
 
 def launchSpark(srcMap,schemaMap,trgtMap,query):
-    spark = pyspark.sql.SparkSession.builder.appName("DataIngestion").getOrCreate()
+    spark = pyspark.sql.SparkSession.builder.appName("DataIngestion").enableHiveSupport().getOrCreate()
     #TODO find alternative to any and restrict it to one row using tail head etc
     ##If source and destination has one entries both side
     for srcKey,src in srcMap.items() :
         print(srcKey)
         print(type(srcKey))
-        if src['fileType'].any() =='csv' :
-            df=spark.read.schema(schemaMap[srcKey]).option("header",src['header'].any() ).csv(src['srcLocation'].any())
+        if src['fileType'].any() == "csv" :
+            df = spark.read.schema(schemaMap[srcKey]).option("header",src['header'].any()).csv(src['srcLocation'].any())
             df.show()
             df.printSchema()
-            for destKey,dest in trgtMap.items() :
-                print(query)
-                df.selectExpr(query).write.mode(dest["mode"].any()).format(dest["fileType"].any()).save(dest["destLocation"].any()+"/"+dest["fileType"].any())
+        elif src['fileType'].any() == "json":
+            df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).csv(src['srcLocation'].any())
+        elif src['fileType'].any() == "parquet":
+            df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).csv(src['srcLocation'].any())
+        elif src['fileType'].any() == "orc":
+            df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).csv(src['srcLocation'].any())
+        elif src['fileType'].any() == "hivetable":
+            df_load = spark.sql('SELECT * FROM categories')
+            #df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).csv(src['srcLocation'].any())
+            #df.write.format("csv").saveAsTable("categories")
 
+
+        for destKey,dest in trgtMap.items() :
+                print(query)
+                print(type(src['fileType'] ))
+                print(src['fileType'] )
+                if dest['fileType'].any() == "csv" or dest['fileType'].any() == "json" or dest['fileType'].any() == "orc" or dest['fileType'].any() == "parque" :
+                    print("IN If")
+                    df.selectExpr(query).write.mode(dest["mode"].any()).format(dest["fileType"].any()).save(dest["destLocation"].any()+"/"+dest["fileType"].any())
+                elif dest['fileType'].any() == "hivetable":
+                    print("IN else")
+                    df.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
 
 
 
@@ -103,4 +120,4 @@ def main(configPath,args):
 
 
 if __name__ == "__main__" :
-    sys.exit(main('C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf',sys.argv))
+    sys.exit(main('C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\config.cnf',sys.argv))
