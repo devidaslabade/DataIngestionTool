@@ -2,4 +2,11 @@
 
 ## Step to execute the Module
 
-python driver.py dataPrepartion.dataIngestion C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf arg1 arg2 ...
+
+For help :
+python driver.py -h 
+
+
+For excuting jobs :
+python driver.py --job=dataPrepartion.dataIngestion --
+config=C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf
