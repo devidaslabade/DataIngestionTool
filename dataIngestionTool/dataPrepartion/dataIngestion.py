@@ -40,18 +40,12 @@ def launchSpark(srcMap,schemaMap,trgtMap,query):
     for srcKey,src in srcMap.items() :
         print(srcKey)
         print(type(srcKey))
-        if src['fileType'].any() == "csv" :
+        if src['fileType'].any() == "csv" or src['fileType'].any() == "json" or src['fileType'].any() == "parquet" or src['fileType'].any() == "orc":
             df = spark.read.schema(schemaMap[srcKey]).option("header",src['header'].any()).csv(src['srcLocation'].any())
             df.show()
             df.printSchema()
-        elif src['fileType'].any() == "json":
-            df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).csv(src['srcLocation'].any())
-        elif src['fileType'].any() == "parquet":
-            df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).csv(src['srcLocation'].any())
-        elif src['fileType'].any() == "orc":
-            df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).csv(src['srcLocation'].any())
         elif src['fileType'].any() == "hivetable":
-            df_load = spark.sql('SELECT * FROM categories')
+            df = spark.sql('SELECT * FROM categories ')
             #df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).csv(src['srcLocation'].any())
             #df.write.format("csv").saveAsTable("categories")
 
@@ -120,4 +114,4 @@ def main(configPath,args):
 
 
 if __name__ == "__main__" :
-    sys.exit(main('C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\config.cnf',sys.argv))
+    sys.exit(main('C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf',sys.argv))
