@@ -1,11 +1,15 @@
 import sys
-import findspark
-findspark.init()
-from pyspark.sql import SparkSession
 import json
 import glob
 import pandas as pd
 from pprint import pprint
+try:
+    import pyspark
+except:
+    import findspark
+    findspark.init()
+    import pyspark
+#from pyspark.sql import SparkSession
 from pyspark.sql.types import *
 #from pyspark.sql.types import StructType, StructField
 #from pyspark.sql.types import DoubleType, IntegerType, StringType
@@ -31,7 +35,7 @@ def fetchSchema(srcCols):
     return fields
 
 def launchSpark(srcMap,schemaMap,trgtMap,query):
-    spark = SparkSession.builder.appName("DataIngestion").getOrCreate()
+    spark = pyspark.sql.SparkSession.builder.appName("DataIngestion").getOrCreate()
     #TODO find alternative to any and restrict it to one row using tail head etc
     ##If source and destination has one entries both side
     for srcKey,src in srcMap.items() :
