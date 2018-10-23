@@ -45,7 +45,10 @@ def launchSpark(srcMap,schemaMap,trgtMap,query):
             df.show()
             df.printSchema()
         elif src['fileType'].any() == "hivetable":
-            df = spark.sql('SELECT * FROM categories ')
+            print(src["table"].any())
+            colName = ','.join(schemaMap[srcKey].fieldNames())
+            df = spark.sql('SELECT '  + colName + ' FROM ' + src["table"].any())
+            df.show()
             #df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).csv(src['srcLocation'].any())
             #df.write.format("csv").saveAsTable("categories")
 
@@ -114,4 +117,5 @@ def main(configPath,args):
 
 
 if __name__ == "__main__" :
-    sys.exit(main('C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf',sys.argv))
+    #sys.exit(main('C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf',sys.argv))
+    sys.exit(main('C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\config.cnf', sys.argv))
