@@ -2,6 +2,7 @@ import sys
 import json
 import glob
 import pandas as pd
+import datetime
 from pprint import pprint
 try:
     import pyspark
@@ -38,17 +39,22 @@ def launchSpark(srcMap,schemaMap,trgtMap,query):
     #TODO find alternative to any and restrict it to one row using tail head etc
     ##If source and destination has one entries both side
     for srcKey,src in srcMap.items() :
-        print(srcKey)
-        print(type(srcKey))
-        if src['fileType'].any() == "csv" or src['fileType'].any() == "json" or src['fileType'].any() == "parquet" or src['fileType'].any() == "orc":
-            df = spark.read.schema(schemaMap[srcKey]).option("header",src['header'].any()).csv(src['srcLocation'].any())
-            df.show()
-            df.printSchema()
-        elif src['fileType'].any() == "hivetable":
-            print(src["table"].any())
-            colName = ','.join(schemaMap[srcKey].fieldNames())
-            df = spark.sql('SELECT '  + colName + ' FROM ' + src["table"].any())
-            df.show()
+        try:
+            print(srcKey)
+            print(type(srcKey))
+            if src['fileType'].any() == "csv" or src['fileType'].any() == "json" or src['fileType'].any() == "parquet" or src['fileType'].any() == "orc":
+                df = spark.read.schema(schemaMap[srcKey]).option("header",src['header'].any()).csv(src['srcLocation'].any())
+                df.show()
+                df.printSchema()
+            elif src['fileType'].any() == "hivetable":
+                print(src["table"].any())
+                colName = ','.join(schemaMap[srcKey].fieldNames())
+                df = spark.sql('SELECT '  + colName + ' FROM ' + src["table"].any())
+                df.show()
+        except Exception as e:
+            print (str(datetime.datetime.now()) + "____________ Exception occurred in launchSpark() ________________")
+            print(str(datetime.datetime.now()) + " The iteration key for srcMap is :: "+srcKey)
+            raise Exception("Exception::msg %s" %str(e)) 
             #df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).csv(src['srcLocation'].any())
             #df.write.format("csv").saveAsTable("categories")
 
@@ -117,5 +123,5 @@ def main(configPath,args):
 
 
 if __name__ == "__main__" :
-    #sys.exit(main('C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf',sys.argv))
-    sys.exit(main('C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\config.cnf', sys.argv))
+    sys.exit(main('C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf',sys.argv))
+    #sys.exit(main('C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\config.cnf', sys.argv))
