@@ -62,14 +62,18 @@ def launchSpark(srcMap,schemaMap,trgtMap,query):
         for destKey,dest in trgtMap.items() :
                 print(query)
                 print(type(src['fileType'] ))
-                print(src['fileType'] )
-                if dest['fileType'].any() == "csv" or dest['fileType'].any() == "json" or dest['fileType'].any() == "orc" or dest['fileType'].any() == "parque" :
-                    print("IN If")
-                    df.selectExpr(query).write.mode(dest["mode"].any()).format(dest["fileType"].any()).save(dest["destLocation"].any()+"/"+dest["fileType"].any())
-                elif dest['fileType'].any() == "hivetable":
-                    print("IN else")
-                    df.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
-
+                print(src['fileType'])
+                try:
+                    if dest['fileType'].any() == "csv" or dest['fileType'].any() == "json" or dest['fileType'].any() == "orc" or dest['fileType'].any() == "parque" :
+                        print("IN If")
+                        df.selectExpr(query).write.mode(dest["mode"].any()).format(dest["fileType"].any()).save(dest["destLocation"].any()+"/"+dest["fileType"].any())
+                    elif dest['fileType'].any() == "hivetable":
+                        print("IN else")
+                        df.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
+                except Exception as e:
+                    print (str(datetime.datetime.now()) + "____________ Exception occurred in launchSpark() ________________")
+                    print(str(datetime.datetime.now()) + " The iteration key for target Map is :: "+destKey)
+                    raise Exception("Exception::msg %s" %str(e))
 
 
 
@@ -123,5 +127,5 @@ def main(configPath,args):
 
 
 if __name__ == "__main__" :
-    sys.exit(main('C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf',sys.argv))
-    #sys.exit(main('C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\config.cnf', sys.argv))
+    #sys.exit(main('C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf',sys.argv))
+    sys.exit(main('C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\config.cnf', sys.argv))
