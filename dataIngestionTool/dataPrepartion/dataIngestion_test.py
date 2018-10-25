@@ -24,11 +24,20 @@ def fetchSchema(srcCols):
     print("Fetching schema values of ",srcCols['srcId'].head(1))
     fields=[]
     for idx,clm in srcCols.iterrows() :
-        if clm['colType'] == "String" :
+        if clm['colType'].lower() == "String".lower() :
             colField =StructField(clm['colName'], StringType(), eval(clm['isNullable']))
             fields.append(colField)
-        elif clm['colType'] == "Integer" :
+        elif clm['colType'].lower() == "Int".lower() :
             colField =StructField(clm['colName'], IntegerType(), eval(clm['isNullable']))
+            fields.append(colField)
+        elif clm['colType'].lower() == "Float".lower() :
+            colField =StructField(clm['colName'], FloatType(), eval(clm['isNullable']))
+            fields.append(colField)
+        elif clm['colType'].lower() == "Double".lower() :
+            colField =StructField(clm['colName'], DoubleType(), eval(clm['isNullable']))
+            fields.append(colField)    
+        elif clm['colType'].lower() == "Boolean".lower() :
+            colField =StructField(clm['colName'], BooleanType(), eval(clm['isNullable']))
             fields.append(colField)
         else :
             colField =StructField(clm['colName'], StringType(), eval(clm['isNullable']))
@@ -71,7 +80,7 @@ def launchSpark(srcMap,schemaMap,trgtMap,query):
                 try:
                     if dest['fileType'].any() == "csv" or dest['fileType'].any() == "json" or dest['fileType'].any() == "orc" or dest['fileType'].any() == "parquet" :
                         print("IN If")
-                        df.selectExpr(query).write.mode(dest["mode"].any()).format(dest["fileType"].any()).save(dest["destLocation"].any()+"_"+dest["fileType"].any()+"/" +dest["fileType"].any())
+                        df.selectExpr(query).write.mode(dest["mode"].any()).format(dest["fileType"].any()).save(dest["destLocation"].any()+dest["destId"].any()+"_"+dest["fileType"].any()+"/" +dest["fileType"].any())
                     elif dest['fileType'].any() == "hivetable":
                         print("IN else")
                         df.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
@@ -119,11 +128,9 @@ def main(configPath,args):
                 destColMap = pd.read_json(config.get('DIT_setup_config', 'destCols')+'destCols_'+mapRow['destId']+'.json')
                 srcCol=srcColMap[(srcColMap['srcId']== mapRow['srcId']) & (srcColMap['colId']== mapRow['srcColId'])]                
                 destCol=destColMap[(destColMap['destId']== mapRow['destId']) & (destColMap['colId']== mapRow['destColId'])]
-                query.append(srcCol['colName'].str.cat()+" as "+destCol['colName'].str.cat())
+                query.append("cast("+srcCol['colName'].str.cat()+" as "+destCol['colType'].str.cat()+" ) as "+destCol['colName'].str.cat())
                 ##Fetch schema of the sources
-                if mapRow['srcId'] in schemaMap:
-                    print("skipping the block")
-                else :
+                if mapRow['srcId'] not in schemaMap:
                     fields=fetchSchema(srcColMap[srcColMap['srcId']== mapRow['srcId']])             
                     schema = StructType(fields)
                     schemaMap[mapRow['srcId']]=schema
@@ -132,9 +139,10 @@ def main(configPath,args):
                     dest = pd.read_json(config.get('DIT_setup_config', 'destDetails')+'dest_'+mapRow['destId']+'.json')
                     srcMap[mapRow['srcId']]=src[src['srcId']==mapRow['srcId']]
                     destMap[mapRow['destId']]=dest[dest['destId']==mapRow['destId']]
+                    
             launchSpark(srcMap,schemaMap,destMap,query)        
 
 
 if __name__ == "__main__" :
-    #sys.exit(main('C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf',sys.argv))
-    sys.exit(main('C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\config.cnf', sys.argv))
+    sys.exit(main('C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf',sys.argv))
+    #sys.exit(main('C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\config.cnf', sys.argv))
