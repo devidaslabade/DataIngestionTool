@@ -1,5 +1,5 @@
 [
     { "mapId":"cm_3","srcId":"SrcId_3","srcColId":"1","destId":"DestId_3","destColId":"1"},
     { "mapId":"cm_3","srcId":"SrcId_3","srcColId":"2","destId":"DestId_3","destColId":"2"},
-    {  "mapId":"cm_3","srcId":"SrcId_3","srcColId":"3","destId":"DestId_3","destColId":"3"}
+   { "mapId":"cm_3","srcId":"SrcId_3","srcColId":"3","destId":"DestId_3","destColId":"3"}
 ]
