@@ -1,3 +1,3 @@
 [
-   {"destId":"DestId_2","destType":"local","destLocation":"C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\trgLoc\\","fileType":"parquet" ,"mode":"overwrite"}
+   {"destId":"DestId_3","destType":"local","destLocation":"C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\trgLoc\\","fileType":"parquet" ,"mode":"overwrite"}
 ]
