@@ -3,6 +3,7 @@ import json
 import glob
 import pandas as pd
 import datetime
+
 from pprint import pprint
 try:
     import pyspark
@@ -51,6 +52,10 @@ def launchSpark(srcMap,schemaMap,trgtMap,query):
                 colName = ','.join(schemaMap[srcKey].fieldNames())
                 df = spark.sql('SELECT '  + colName + ' FROM ' + src["table"].any())
                 df.show()
+            elif src['fileType'].any() == "jdbcclient":
+                print(src["table"].any())
+                df = spark.read.format("jdbc").option("url", src["url"].any()).option("driver", src["driver"].any()).option("dbtable", src["table"].any()).option("user", src["user"].any()).option("password",src["password"].any()).load()
+                df.show()
         except Exception as e:
             print (str(datetime.datetime.now()) + "____________ Exception occurred in launchSpark() ________________")
             print(str(datetime.datetime.now()) + " The iteration key for srcMap is :: "+srcKey)
@@ -64,12 +69,16 @@ def launchSpark(srcMap,schemaMap,trgtMap,query):
                 print(type(src['fileType'] ))
                 print(src['fileType'])
                 try:
-                    if dest['fileType'].any() == "csv" or dest['fileType'].any() == "json" or dest['fileType'].any() == "orc" or dest['fileType'].any() == "parque" :
+                    if dest['fileType'].any() == "csv" or dest['fileType'].any() == "json" or dest['fileType'].any() == "orc" or dest['fileType'].any() == "parquet" :
                         print("IN If")
-                        df.selectExpr(query).write.mode(dest["mode"].any()).format(dest["fileType"].any()).save(dest["destLocation"].any()+"/"+dest["fileType"].any())
+                        df.selectExpr(query).write.mode(dest["mode"].any()).format(dest["fileType"].any()).save(dest["destLocation"].any()+"_"+dest["fileType"].any()+"/" +dest["fileType"].any())
                     elif dest['fileType'].any() == "hivetable":
                         print("IN else")
                         df.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
+                    elif dest['fileType'].any() == "jdbcclient":
+                        print("IN else")
+                        df.write.format("jdbc").mode(dest["mode"].any()).option("numPartitions", 8).option("url", dest["url"].any()).option("driver", dest["driver"].any()).option("dbtable", dest["table"].any()).option("user", dest["user"].any()).option("password",dest["password"].any()).save()
+                        print("End IN else")
                 except Exception as e:
                     print (str(datetime.datetime.now()) + "____________ Exception occurred in launchSpark() ________________")
                     print(str(datetime.datetime.now()) + " The iteration key for target Map is :: "+destKey)
