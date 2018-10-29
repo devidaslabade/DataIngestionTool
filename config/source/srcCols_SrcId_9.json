@@ -1,0 +1,4 @@
+[
+ 	{ "srcId":"SrcId_9","colName":"department_id","colType":"Int","isNullable":"True","colPos":"1","colId":"1"},
+	{ "srcId":"SrcId_9","colName":"department_name","colType":"String","isNullable":"True","colPos":"2","colId":"2"}
+]
