@@ -115,3 +115,4 @@ venv.bak/
 trgLoc/
 dataIngestionTool/dataPrepartion/metastore_db/
 dataIngestionTool/dataPrepartion/spark-warehouse/
+dataIngestionTool/metastore_db
