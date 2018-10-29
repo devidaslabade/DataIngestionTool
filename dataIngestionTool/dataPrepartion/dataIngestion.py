@@ -127,7 +127,7 @@ def processData(spark, srcMap, schemaMap, trgtMap, query, spark_logger):
             print(query)
             try:
                 if dest['fileType'].any() == "csv" or dest['fileType'].any() == "json" or dest[
-                    'fileType'].any() == "orc" or dest['fileType'].any() == "parque":
+                    'fileType'].any() == "orc" or dest['fileType'].any() == "parquet":
                     df.selectExpr(query).write.mode(dest["mode"].any()).format(dest["fileType"].any()).save(
                         dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
                             "fileType"].any())
@@ -189,3 +189,4 @@ if __name__ == "__main__":
     pool=3
     sys.exit(main('C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf', prcs,pool))
     # sys.exit(main('C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\config.cnf', sys.argv))
+

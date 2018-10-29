@@ -1,0 +1,4 @@
+[
+	{ "destId":"DestId_9","colName":"cat_name","colType":"Int","isNullable":"True","colPos":"1","colId":"1"},
+	{ "destId":"DestId_9","colName":"dept_name","colType":"Int","isNullable":"True","colPos":"2","colId":"2"}
+]
