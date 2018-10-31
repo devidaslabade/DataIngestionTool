@@ -7,6 +7,7 @@ from multiprocessing.dummy import Pool as ThreadPool
 from itertools import repeat
 import pandas as pd
 import datetime
+import traceback
 
 sys.path.append('../')
 import comnUtil.logr as logg
@@ -47,9 +48,16 @@ def prepareMeta(sprkSession, prcRow):
             srcCol = srcColMap[(srcColMap['srcId'] == mapRow['srcId']) & (srcColMap['colId'] == mapRow['srcColId'])]
             destCol = destColMap[(destColMap['destId'] == mapRow['destId']) & (destColMap['colId'] == mapRow['destColId'])]
             # query.append(srcCol['colName'].str.cat()+" as "+destCol['colName'].str.cat())
-            query.append("cast(" + srcCol['colName'].str.cat() + " as " + destCol['colType'].str.cat() + " ) as " + destCol[
-            'colName'].str.cat())
-            # #Fetch schema of the sources
+            if srcCol.empty :
+                print("Dataframe is empty :: "+srcCol.to_string())
+                query.append("cast(" + destCol['default'].astype(str).str.cat() + " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
+            elif destCol['transFunc'].empty or destCol['transFunc'].isnull().item() or destCol['transFunc'].item()== "NA":
+                query.append("cast(" + srcCol['colName'].str.cat() + " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
+            else :
+                print(type(destCol['transFunc']))
+                query.append("cast(" + destCol['transFunc'].str.cat().format(srcCol['colName'].str.cat())+  " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
+                
+            ## Fetch schema of the sources
             if mapRow['srcId'] not in schemaMap:
                 fields = fetchSchema(srcColMap[srcColMap['srcId'] == mapRow['srcId']], spark_logger)
                 schema = StructType(fields)
@@ -63,7 +71,8 @@ def prepareMeta(sprkSession, prcRow):
     except Exception as e:
         spark_logger.warn(str(datetime.datetime.now()) + "____________ Exception occurred in prepareMeta() ________________")
         spark_logger.warn(str(datetime.datetime.now()) + " The exception occurred for process ID :: " + prcRow['prcId'])
-        spark_logger.warn("Exception::msg %s" % str(e))        
+        spark_logger.warn("Exception::msg %s" % str(e)) 
+        print(traceback.format_exc())       
 
                 
 def fetchSchema(srcCols, spark_logger):
@@ -94,7 +103,7 @@ def fetchSchema(srcCols, spark_logger):
         print(str(datetime.datetime.now()) + "____________ Exception occurred in fetchSchema() ________________")
         print(str(datetime.datetime.now()) + " The exception occurred for Src Id :: " + srcCols['srcId'].str.cat())
         print("Exception::msg %s" % str(e)) 
-
+        print(traceback.format_exc())
 
 def processData(spark, srcMap, schemaMap, trgtMap, query, spark_logger):
     # TODO find alternative to any and restrict it to one row using tail head etc
@@ -122,7 +131,8 @@ def processData(spark, srcMap, schemaMap, trgtMap, query, spark_logger):
             print(str(datetime.datetime.now()) + "____________ Exception occurred in processData() ________________")
             print(str(datetime.datetime.now()) + " The iteration key for srcMap is :: " + srcKey)
             print("Exception::msg %s" % str(e))
-
+            print(traceback.format_exc())
+            
         for destKey, dest in trgtMap.items():
             print(query)
             try:
@@ -134,17 +144,16 @@ def processData(spark, srcMap, schemaMap, trgtMap, query, spark_logger):
                 elif dest['fileType'].any() == "hivetable":
                     df.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
                 elif dest['fileType'].any() == "jdbcclient":
-                    df.write.format("jdbc").mode(dest["mode"].any()).option("numPartitions", 8).option("url", dest[
-                        "url"].any()).option("driver", dest["driver"].any()).option("dbtable",
-                                                                                    dest["table"].any()).option("user",
-                                                                                                                dest[
-                                                                                                                    "user"].any()).option(
-                        "password", dest["password"].any()).save()
+                    df.write.format("jdbc").mode(dest["mode"].any()).option("numPartitions", 8)\
+                        .option("url", dest["url"].any()).option("driver", dest["driver"].any())\
+                        .option("dbtable",dest["table"].any()).option("user",dest["user"].any())\
+                        .option("password", dest["password"].any()).save()
             except Exception as e:
                 print(
                     str(datetime.datetime.now()) + "____________ Exception occurred in processData() ________________")
                 print(str(datetime.datetime.now()) + " The iteration key for target Map is :: " + destKey)
                 print("Exception::msg %s" % str(e))
+                print(traceback.format_exc())
                 # raise Exception("Exception::msg %s" % str(e))
     # spark.stop()
 
@@ -159,18 +168,19 @@ def processFiles(argTuple):
             print(str(datetime.datetime.now()) + "____________ Exception occurred in processFiles() ________________")
             print(str(datetime.datetime.now()) + " The exception occured for :: " + argTuple[0])
             print("Exception::msg %s" % str(e))        
-
+            print(traceback.format_exc())
 
 def main(configPath, prcPattern,pool):
     # parse existing file
     config.read(configPath)
     # Read Process files and set thread pool
     prcList = list()
-    #regex = r'prc_PrcId_[0-9].json'    
-    #regex = r'(colMapping_cm_(1|21|12)|prc_(PrcId_[0-9])).json'
+    #regex = "r\'"+prcPattern+"\'".encode('string_escape')    
+    regex = r'(colMapping_cm_(1|21|12)|prc_(PrcId_[0-9])).json'
     #print(regex)
     for dir, root, files in os.walk(config.get('DIT_setup_config', 'prcDetails')):
         matches = re.finditer(r'{0}'.format(prcPattern), ' '.join(files), re.MULTILINE)
+        #matches = re.finditer(regex, ' '.join(files), re.MULTILINE)
         for matchNum, match in enumerate(matches):
             prcList.append(os.path.join(dir, match.group()))
     
