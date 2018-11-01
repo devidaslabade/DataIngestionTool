@@ -94,7 +94,9 @@ def prepareMeta(sprkSession, prcRow):
         print("Above process data --------",queryMap)
             #for ls in kval:
             #    print("val is" + ls)
-        processData(sprkSession, srcMap, schemaMap, destMap, query, queryMap,spark_logger)
+        #processData(sprkSession, srcMap, schemaMap, destMap, query, queryMap,spark_logger)
+        mapping = findMapping(queryMap)
+        print("mapping----------" +mapping)
     except Exception as e:
         spark_logger.warn(
             str(datetime.datetime.now()) + "____________ Exception occurred in prepareMeta() ________________")
@@ -272,6 +274,62 @@ def main(configPath, prcPattern, pool):
     # sprkSession=spark.newSession()
     threadPool.map(processFiles, zip(prcList, repeat(spark.newSession())))
     # spark.stop()
+
+def findMapping(queryMap):
+    # spark = pyspark.sql.SparkSession.builder.appName("DataIngestion").enableHiveSupport().getOrCreate()
+    try:
+        srcTokens = list()
+        destTokens = list()
+        print(queryMap)
+        for k,v in queryMap.items() :
+            print("key is - ----" +k)
+            print("value is - ----", v)
+
+            tokens = k.split(":")
+            #print("tokens is - ----" + tokens)
+            fields = ','.join(set(tokens))
+            print("fields is - ----" + fields)
+            count = 0
+            for s in tokens:
+                print("String is " + s)
+                if re.match(r'^Src', s):
+                    print("Inside src tockens")
+                    srcTokens.append(s)
+                elif re.match(r'^Dest', s):
+                    print("Inside dest tockens")
+                    destTokens.append(s)
+                    print("End")
+
+        uniqueSrc = ",".join(set(srcTokens))
+        uniqueDest = ",".join(set(destTokens))
+        uniqueSrcList = list(uniqueSrc.split(","))
+        uniqueDestList = list(uniqueDest.split(","))
+
+        print("uniqueSrcList is - ----", uniqueSrcList.__len__())
+        print("uniqueDestList is - ----", uniqueDestList.__len__())
+        print("srcTokens is - ----", srcTokens)
+        print("destTokens is - ----", destTokens)
+
+        if uniqueSrcList.__len__() == 1 and uniqueDestList.__len__() == 1:
+            return "One_to_One"
+        elif uniqueSrcList.__len__() > 1 and uniqueDestList.__len__() == 1:
+            return "Many_to_One"
+        elif uniqueSrcList.__len__() == 1 and uniqueDestList.__len__() > 1:
+            return "One_to_Many"
+        elif uniqueSrcList.__len__() > 1 and uniqueDestList.__len__() > 1:
+            return "Many_to_Many"
+
+
+
+
+
+
+
+    except Exception as e:
+        print(str(datetime.datetime.now()) + "____________ Exception occurred in processFiles() ________________")
+        print(str(datetime.datetime.now()) + " The exception occured for :: " + queryMap[0])
+        print("Exception::msg %s" % str(e))
+        print(traceback.format_exc())
 
 
 if __name__ == "__main__":
