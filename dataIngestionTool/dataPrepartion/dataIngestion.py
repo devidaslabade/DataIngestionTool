@@ -19,7 +19,7 @@ except:
 
     findspark.init()
     import pyspark
-# from pyspark.sql import SparkSession
+#from pyspark.sql import DataFrame
 from pyspark.sql import SparkSession
 from pyspark.sql.types import *
 # from pyspark.sql.types import StructType, StructField
@@ -86,6 +86,9 @@ def fetchSchema(srcCols, spark_logger):
             elif clm['colType'].lower() == "Int".lower():
                 colField = StructField(clm['colName'], IntegerType(), eval(clm['isNullable']))
                 fields.append(colField)
+            elif clm['colType'].lower() == "Long".lower():
+                colField = StructField(clm['colName'], LongType(), eval(clm['isNullable']))
+                fields.append(colField)
             elif clm['colType'].lower() == "Float".lower():
                 colField = StructField(clm['colName'], FloatType(), eval(clm['isNullable']))
                 fields.append(colField)
@@ -94,6 +97,9 @@ def fetchSchema(srcCols, spark_logger):
                 fields.append(colField)
             elif clm['colType'].lower() == "Boolean".lower():
                 colField = StructField(clm['colName'], BooleanType(), eval(clm['isNullable']))
+                fields.append(colField)
+            elif clm['colType'].lower() == "Timestamp".lower():
+                colField = StructField(clm['colName'], TimestampType(), eval(clm['isNullable']))
                 fields.append(colField)
             else:
                 colField = StructField(clm['colName'], StringType(), eval(clm['isNullable']))
@@ -141,6 +147,7 @@ def processData(spark, srcMap, schemaMap, trgtMap, query, spark_logger):
                     df.selectExpr(query).write.mode(dest["mode"].any()).format(dest["fileType"].any()).save(
                         dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
                             "fileType"].any())
+                    df.selectExpr(query).show(truncate=False)
                 elif dest['fileType'].any() == "hivetable":
                     df.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
                 elif dest['fileType'].any() == "jdbcclient":
