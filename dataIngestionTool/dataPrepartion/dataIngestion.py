@@ -116,6 +116,8 @@ def processData(spark, srcMap, schemaMap, trgtMap, query, spark_logger):
     # #If source and destination has one entries both side
     for srcKey, src in srcMap.items():
         try:
+
+            print(schemaMap.__len__())
             if src['fileType'].any() == "csv" or src['fileType'].any() == "json" or src[
                 'fileType'].any() == "parquet" or src['fileType'].any() == "orc":
                 df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).csv(
@@ -204,6 +206,6 @@ def main(configPath, prcPattern,pool):
 if __name__ == "__main__":
     prcs="prc_PrcId_[0-9].json"
     pool=3
-    sys.exit(main('C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf', prcs,pool))
-    # sys.exit(main('C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\config.cnf', sys.argv))
+    #sys.exit(main('C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf', prcs,pool))
+    sys.exit(main('C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\config.cnf',prcs,pool))
 
