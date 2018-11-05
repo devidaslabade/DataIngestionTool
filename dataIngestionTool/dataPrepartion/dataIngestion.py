@@ -29,90 +29,26 @@ from configparser import ConfigParser
 # instantiate
 config = ConfigParser()
 
-
-def prepareMeta(sprkSession, prcRow):
-    spark_logger = logg.Log4j(sprkSession, prcRow['prcId'])
-    spark_logger.warn("_________________Started processing process Id : " + prcRow['prcId'] + " : ____________________")
+def findMapping(uniqSrc,uniqDest):
+    # spark = pyspark.sql.SparkSession.builder.appName("DataIngestion").enableHiveSupport().getOrCreate()
     try:
-        query = []
-        schemaMap = {}
-        srcMap = {}
-        destMap = {}
-        # Fetch process Id specific mapping file
-        maps = pd.read_json(config.get('DIT_setup_config', 'prcMapping') + 'colMapping_' + prcRow['mapId'] + '.json')
-        mapTab = maps[maps['mapId'] == prcRow['mapId']]
-        for mapId, mapRow in mapTab.iterrows():
-            # Fetch source and destination column mapping files
-            srcColMap = pd.read_json(config.get('DIT_setup_config', 'srcCols') + 'srcCols_' + mapRow['srcId'] + '.json')
-            destColMap = pd.read_json(config.get('DIT_setup_config', 'destCols') + 'destCols_' + mapRow['destId'] + '.json')
-            srcCol = srcColMap[(srcColMap['srcId'] == mapRow['srcId']) & (srcColMap['colId'] == mapRow['srcColId'])]
-            destCol = destColMap[(destColMap['destId'] == mapRow['destId']) & (destColMap['colId'] == mapRow['destColId'])]
-            # query.append(srcCol['colName'].str.cat()+" as "+destCol['colName'].str.cat())
-            if srcCol.empty :
-                query.append("cast(" + destCol['default'].astype(str).str.cat() + " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
-            elif destCol.get('transFunc') is None or destCol.get('transFunc').empty or destCol.get('transFunc').isnull().any().any() or destCol.get('transFunc').item()== "NA":
-                query.append("cast(" + srcCol['colName'].str.cat() + " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
-            else :
-                query.append("cast(" + destCol['transFunc'].str.cat().format(srcCol['colName'].str.cat())+  " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
-                
-            ## Fetch schema of the sources
-            if mapRow['srcId'] not in schemaMap:
-                fields = fetchSchema(srcColMap[srcColMap['srcId'] == mapRow['srcId']], spark_logger)
-                schema = StructType(fields)
-                schemaMap[mapRow['srcId']] = schema
-                # Fetch source and destination details
-                src = pd.read_json(config.get('DIT_setup_config', 'srcDetails') + 'src_' + mapRow['srcId'] + '.json')
-                dest = pd.read_json(config.get('DIT_setup_config', 'destDetails') + 'dest_' + mapRow['destId'] + '.json')
-                srcMap[mapRow['srcId']] = src[src['srcId'] == mapRow['srcId']]
-                destMap[mapRow['destId']] = dest[dest['destId'] == mapRow['destId']]
-        processData(sprkSession, srcMap, schemaMap, destMap, query, spark_logger)
+        if uniqSrc == 1 and uniqDest == 1:
+            return "One_to_One"
+        elif uniqSrc > 1 and uniqDest == 1:
+            return "Many_to_One"
+        elif uniqSrc == 1 and uniqDest > 1:
+            return "One_to_Many"
+        elif uniqSrc > 1 and uniqDest > 1:
+            return "Many_to_Many"
     except Exception as e:
-        spark_logger.warn(str(datetime.datetime.now()) + "____________ Exception occurred in prepareMeta() ________________")
-        spark_logger.warn(str(datetime.datetime.now()) + " The exception occurred for process ID :: " + prcRow['prcId'])
-        spark_logger.warn("Exception::msg %s" % str(e)) 
-        print(traceback.format_exc())       
-
-                
-def fetchSchema(srcCols, spark_logger):
-    try:
-        spark_logger.warn("Fetching schema values for SRC Id " + srcCols['srcId'].str.cat())
-        fields = []
-        for idx, clm in srcCols.iterrows():
-            if clm['colType'].lower() == "String".lower():
-                colField = StructField(clm['colName'], StringType(), eval(clm['isNullable']))
-                fields.append(colField)
-            elif clm['colType'].lower() == "Int".lower():
-                colField = StructField(clm['colName'], IntegerType(), eval(clm['isNullable']))
-                fields.append(colField)
-            elif clm['colType'].lower() == "Long".lower():
-                colField = StructField(clm['colName'], LongType(), eval(clm['isNullable']))
-                fields.append(colField)
-            elif clm['colType'].lower() == "Float".lower():
-                colField = StructField(clm['colName'], FloatType(), eval(clm['isNullable']))
-                fields.append(colField)
-            elif clm['colType'].lower() == "Double".lower():
-                colField = StructField(clm['colName'], DoubleType(), eval(clm['isNullable']))
-                fields.append(colField)
-            elif clm['colType'].lower() == "Boolean".lower():
-                colField = StructField(clm['colName'], BooleanType(), eval(clm['isNullable']))
-                fields.append(colField)
-            elif clm['colType'].lower() == "Timestamp".lower():
-                colField = StructField(clm['colName'], TimestampType(), eval(clm['isNullable']))
-                fields.append(colField)
-            else:
-                colField = StructField(clm['colName'], StringType(), eval(clm['isNullable']))
-                fields.append(colField)
-        return fields
-    except Exception as e:
-        print(str(datetime.datetime.now()) + "____________ Exception occurred in fetchSchema() ________________")
-        print(str(datetime.datetime.now()) + " The exception occurred for Src Id :: " + srcCols['srcId'].str.cat())
-        print("Exception::msg %s" % str(e)) 
+        print(str(datetime.datetime.now()) + "____________ Exception occurred in findMapping() ________________")
+        print(str(datetime.datetime.now()) + " The exception occurred for :: " + uniqSrc+" :: "+uniqDest)
+        print("Exception::msg %s" % str(e))
         print(traceback.format_exc())
-
-def processData(spark, srcMap, schemaMap, trgtMap, query, spark_logger):
-    # TODO find alternative to any and restrict it to one row using tail head etc
-    # #If source and destination has one entries both side
+        
+def singleSrcPrc(spark,srcMap, schemaMap, trgtMap, query, spark_logger):
     for srcKey, src in srcMap.items():
+        spark_logger.warn("The processing singleSrcPrc() process for " + srcKey)
         try:
             if src['fileType'].any() == "csv" or src['fileType'].any() == "json" or src[
                 'fileType'].any() == "parquet" or src['fileType'].any() == "orc":
@@ -159,6 +95,114 @@ def processData(spark, srcMap, schemaMap, trgtMap, query, spark_logger):
                 print(str(datetime.datetime.now()) + " The iteration key for target Map is :: " + destKey)
                 print("Exception::msg %s" % str(e))
                 print(traceback.format_exc())
+    
+
+
+
+        
+def prepareMeta(sprkSession, prcRow):
+    spark_logger = logg.Log4j(sprkSession, prcRow['prcId'])
+    spark_logger.warn("_________________Started processing process Id : " + prcRow['prcId'] + " : ____________________")
+    try:
+        queryMap = {}
+        schemaMap = {}
+        srcMap = {}
+        destMap = {}
+        # Fetch process Id specific mapping file
+        maps = pd.read_json(config.get('DIT_setup_config', 'prcMapping') + 'colMapping_' + prcRow['mapId'] + '.json')
+        mapTab = maps[maps['mapId'] == prcRow['mapId']]
+        for mapId, mapRow in mapTab.iterrows():
+            # Fetch source and destination column mapping files
+            srcColMap = pd.read_json(config.get('DIT_setup_config', 'srcCols') + 'srcCols_' + mapRow['srcId'] + '.json')
+            destColMap = pd.read_json(config.get('DIT_setup_config', 'destCols') + 'destCols_' + mapRow['destId'] + '.json')
+            srcCol = srcColMap[(srcColMap['srcId'] == mapRow['srcId']) & (srcColMap['colId'] == mapRow['srcColId'])]
+            destCol = destColMap[(destColMap['destId'] == mapRow['destId']) & (destColMap['colId'] == mapRow['destColId'])]
+            # query.append(srcCol['colName'].str.cat()+" as "+destCol['colName'].str.cat())
+            srcDest = mapRow['srcId'] + ":" + mapRow['destId']
+            query= []
+            if srcCol.empty :
+                query.append("cast(" + destCol['default'].astype(str).str.cat() + " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
+            elif destCol.get('transFunc') is None or destCol.get('transFunc').empty or destCol.get('transFunc').isnull().any().any() or destCol.get('transFunc').item()== "NA":
+                query.append("cast(" + srcCol['colName'].str.cat() + " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
+            else :
+                query.append("cast(" + destCol['transFunc'].str.cat().format(srcCol['colName'].str.cat())+  " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
+            
+            if srcDest not in queryMap :
+                queryMap[srcDest] = query
+            else :
+                tmpQuery = queryMap[srcDest]
+                tmpQuery.append(query)
+                queryMap[srcDest] = tmpQuery
+
+            ## Fetch schema of the sources
+            if mapRow['srcId'] not in schemaMap:
+                fields = fetchSchema(srcColMap[srcColMap['srcId'] == mapRow['srcId']], spark_logger)
+                schema = StructType(fields)
+                schemaMap[mapRow['srcId']] = schema
+                # Fetch source and destination details
+                src = pd.read_json(config.get('DIT_setup_config', 'srcDetails') + 'src_' + mapRow['srcId'] + '.json')
+                dest = pd.read_json(config.get('DIT_setup_config', 'destDetails') + 'dest_' + mapRow['destId'] + '.json')
+                srcMap[mapRow['srcId']] = src[src['srcId'] == mapRow['srcId']]
+                destMap[mapRow['destId']] = dest[dest['destId'] == mapRow['destId']]
+        print("Above process data --------",queryMap)
+        mapping=findMapping(mapTab.srcId.nunique(),mapTab.destId.nunique())
+        print("mapping----------" +mapping)
+        processData(sprkSession,mapping, srcMap, schemaMap, destMap, query, spark_logger)
+    except Exception as e:
+        spark_logger.warn(str(datetime.datetime.now()) + "____________ Exception occurred in prepareMeta() ________________")
+        spark_logger.warn(str(datetime.datetime.now()) + " The exception occurred for process ID :: " + prcRow['prcId'])
+        spark_logger.warn("Exception::msg %s" % str(e)) 
+        print(traceback.format_exc())       
+
+                
+def fetchSchema(srcCols, spark_logger):
+    try:
+        spark_logger.warn("Fetching schema values for SRC Id " + srcCols['srcId'].str.cat())
+        fields = []
+        for idx, clm in srcCols.iterrows():
+            if clm['colType'].lower() == "String".lower():
+                colField = StructField(clm['colName'], StringType(), eval(clm['isNullable']))
+                fields.append(colField)
+            elif clm['colType'].lower() == "Int".lower():
+                colField = StructField(clm['colName'], IntegerType(), eval(clm['isNullable']))
+                fields.append(colField)
+            elif clm['colType'].lower() == "Long".lower():
+                colField = StructField(clm['colName'], LongType(), eval(clm['isNullable']))
+                fields.append(colField)
+            elif clm['colType'].lower() == "Float".lower():
+                colField = StructField(clm['colName'], FloatType(), eval(clm['isNullable']))
+                fields.append(colField)
+            elif clm['colType'].lower() == "Double".lower():
+                colField = StructField(clm['colName'], DoubleType(), eval(clm['isNullable']))
+                fields.append(colField)
+            elif clm['colType'].lower() == "Boolean".lower():
+                colField = StructField(clm['colName'], BooleanType(), eval(clm['isNullable']))
+                fields.append(colField)
+            elif clm['colType'].lower() == "Timestamp".lower():
+                colField = StructField(clm['colName'], TimestampType(), eval(clm['isNullable']))
+                fields.append(colField)
+            else:
+                colField = StructField(clm['colName'], StringType(), eval(clm['isNullable']))
+                fields.append(colField)
+        return fields
+    except Exception as e:
+        print(str(datetime.datetime.now()) + "____________ Exception occurred in fetchSchema() ________________")
+        print(str(datetime.datetime.now()) + " The exception occurred for Src Id :: " + srcCols['srcId'].str.cat())
+        print("Exception::msg %s" % str(e)) 
+        print(traceback.format_exc())
+
+def processData(spark,mapping, srcMap, schemaMap, trgtMap, query, spark_logger):
+    # TODO find alternative to any and restrict it to one row using tail head etc
+    # #If source and destination has one entries both side
+    
+    if mapping== "One_to_One" or mapping== "One_to_Many":
+        singleSrcPrc(spark,srcMap, schemaMap, trgtMap, query, spark_logger)
+    elif mapping == "Many_to_One"  :
+        print("in "+mapping) 
+    elif mapping == "Many_to_Many" :
+        print("in "+mapping)
+   
+    
                 # raise Exception("Exception::msg %s" % str(e))
     # spark.stop()
 
@@ -181,7 +225,7 @@ def main(configPath, prcPattern,pool):
     # Read Process files and set thread pool
     prcList = list()
     #regex = "r\'"+prcPattern+"\'".encode('string_escape')    
-    regex = r'(colMapping_cm_(1|21|12)|prc_(PrcId_[0-9])).json'
+    #regex = r'(colMapping_cm_(1|21|12)|prc_(PrcId_[0-9])).json'
     #print(regex)
     for dir, root, files in os.walk(config.get('DIT_setup_config', 'prcDetails')):
         matches = re.finditer(r'{0}'.format(prcPattern), ' '.join(files), re.MULTILINE)
