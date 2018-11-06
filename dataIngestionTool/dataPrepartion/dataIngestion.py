@@ -46,7 +46,7 @@ def findMapping(uniqSrc,uniqDest):
         print("Exception::msg %s" % str(e))
         print(traceback.format_exc())
         
-def singleSrcPrc(spark,srcMap, schemaMap, trgtMap, query, spark_logger):
+def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap, spark_logger):
     for srcKey, src in srcMap.items():
         spark_logger.warn("The processing singleSrcPrc() process for " + srcKey)
         try:
@@ -73,15 +73,15 @@ def singleSrcPrc(spark,srcMap, schemaMap, trgtMap, query, spark_logger):
             print("Exception::msg %s" % str(e))
             print(traceback.format_exc())
             
-        for destKey, dest in trgtMap.items():
-            print(query)
+        for destKey, dest in destMap.items():
+            print(queryMap[destKey])
             try:
                 if dest['fileType'].any() == "csv" or dest['fileType'].any() == "json" or dest[
                     'fileType'].any() == "orc" or dest['fileType'].any() == "parquet":
-                    df.selectExpr(query).write.mode(dest["mode"].any()).format(dest["fileType"].any()).save(
+                    df.selectExpr(queryMap[destKey]).write.mode(dest["mode"].any()).format(dest["fileType"].any()).save(
                         dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
                             "fileType"].any())
-                    df.selectExpr(query).show(truncate=False)
+                    df.selectExpr(queryMap[destKey]).show(truncate=False)
                 elif dest['fileType'].any() == "hivetable":
                     df.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
                 elif dest['fileType'].any() == "jdbcclient":
@@ -131,23 +131,23 @@ def prepareMeta(sprkSession, prcRow):
                 queryMap[srcDest] = query
             else :
                 tmpQuery = queryMap[srcDest]
-                tmpQuery.append(query)
+                tmpQuery.extend(query)
                 queryMap[srcDest] = tmpQuery
 
             ## Fetch schema of the sources
-            if mapRow['srcId'] not in schemaMap:
+            if srcDest not in schemaMap:
                 fields = fetchSchema(srcColMap[srcColMap['srcId'] == mapRow['srcId']], spark_logger)
                 schema = StructType(fields)
-                schemaMap[mapRow['srcId']] = schema
+                schemaMap[srcDest] = schema
                 # Fetch source and destination details
                 src = pd.read_json(config.get('DIT_setup_config', 'srcDetails') + 'src_' + mapRow['srcId'] + '.json')
                 dest = pd.read_json(config.get('DIT_setup_config', 'destDetails') + 'dest_' + mapRow['destId'] + '.json')
-                srcMap[mapRow['srcId']] = src[src['srcId'] == mapRow['srcId']]
-                destMap[mapRow['destId']] = dest[dest['destId'] == mapRow['destId']]
+                srcMap[srcDest] = src[src['srcId'] == mapRow['srcId']]
+                destMap[srcDest] = dest[dest['destId'] == mapRow['destId']]
         print("Above process data --------",queryMap)
         mapping=findMapping(mapTab.srcId.nunique(),mapTab.destId.nunique())
         print("mapping----------" +mapping)
-        processData(sprkSession,mapping, srcMap, schemaMap, destMap, query, spark_logger)
+        processData(sprkSession,mapping, srcMap, schemaMap, destMap, queryMap, spark_logger)
     except Exception as e:
         spark_logger.warn(str(datetime.datetime.now()) + "____________ Exception occurred in prepareMeta() ________________")
         spark_logger.warn(str(datetime.datetime.now()) + " The exception occurred for process ID :: " + prcRow['prcId'])
@@ -191,12 +191,21 @@ def fetchSchema(srcCols, spark_logger):
         print("Exception::msg %s" % str(e)) 
         print(traceback.format_exc())
 
-def processData(spark,mapping, srcMap, schemaMap, trgtMap, query, spark_logger):
+def processData(spark,mapping, srcMap, schemaMap, trgtMap, queryMap, spark_logger):
     # TODO find alternative to any and restrict it to one row using tail head etc
     # #If source and destination has one entries both side
-    
+    print("src Map")
+    print(srcMap)
+    print("schemaMap")
+    print(schemaMap)
+    print("trgtMap")
+    print(trgtMap)
+    print("queryMap")
+    print(queryMap)
     if mapping== "One_to_One" or mapping== "One_to_Many":
-        singleSrcPrc(spark,srcMap, schemaMap, trgtMap, query, spark_logger)
+        print("queryMap")
+        print(queryMap)
+        singleSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap, spark_logger)
     elif mapping == "Many_to_One"  :
         print("in "+mapping) 
     elif mapping == "Many_to_Many" :

@@ -15,8 +15,6 @@ python driver.py --job=dataPrepartion.dataIngestion --configLoc=C:\\Users\\sk250
 
 ### Supported datatypes 
 
-( https://docs.tibco.com/pub/sfire-analyst/7.7.1/doc/html/en-US/TIB_sfire-analyst_UsersGuide/connectors/apache-spark/apache_spark_data_types.htm ) :
-
 *Datatypes are not case sensitive*
 
 	INT 		Integer/Int  (a signed 32-bit integer)
