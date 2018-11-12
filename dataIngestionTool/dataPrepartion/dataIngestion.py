@@ -122,10 +122,13 @@ def prepareMeta(sprkSession, prcRow):
             query= []
             if srcCol.empty :
                 query.append("cast(" + destCol['default'].astype(str).str.cat() + " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
+                print("in block 1"+destCol['colType'].str.cat() )
             elif destCol.get('transFunc') is None or destCol.get('transFunc').empty or destCol.get('transFunc').isnull().any().any() or destCol.get('transFunc').item()== "NA":
                 query.append("cast(" + srcCol['colName'].str.cat() + " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
+                print("in block 2"+srcCol['colName'].str.cat())
             else :
                 query.append("cast(" + destCol['transFunc'].str.cat().format(srcCol['colName'].str.cat())+  " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
+                print("in block 3"+srcCol['colName'].str.cat())
             
             if srcDest not in queryMap :
                 queryMap[srcDest] = query
