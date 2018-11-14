@@ -9,8 +9,8 @@ import pandas as pd
 import datetime
 import traceback
 
-sys.path.append('../')
-import comnUtil.logr as logg
+#sys.path.append('../')
+import dataIngestionTool.comnUtil.logr as logg
 
 try:
     import pyspark
@@ -59,6 +59,7 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap, spark_logger):
             elif src['fileType'].any() == "hivetable":
                 colName = ','.join(schemaMap[srcKey].fieldNames())
                 df = spark.sql('SELECT ' + colName + ' FROM ' + src["table"].any())
+                print("read from table" + src["table"].any())
                 df.show()
             elif src['fileType'].any() == "jdbcclient":
                 print(src["table"].any())
@@ -89,6 +90,7 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap, spark_logger):
                         .option("url", dest["url"].any()).option("driver", dest["driver"].any())\
                         .option("dbtable",dest["table"].any()).option("user",dest["user"].any())\
                         .option("password", dest["password"].any()).save()
+                print("Data inserted successfully for---------- " + destKey )
             except Exception as e:
                 print(
                     str(datetime.datetime.now()) + "____________ Exception occurred in processData() ________________")
@@ -258,6 +260,6 @@ def main(configPath, prcPattern,pool):
 if __name__ == "__main__":
     prcs="prc_PrcId_[0-9].json"
     pool=3
-    sys.exit(main('C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf', prcs,pool))
-    #sys.exit(main('C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\config.cnf',prcs,pool))
+    #sys.exit(main('C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf', prcs,pool))
+    sys.exit(main('C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\config.cnf',prcs,pool))
 
