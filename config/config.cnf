@@ -5,3 +5,5 @@ srcDetails = C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\so
 srcCols = C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\source\\
 destDetails= C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\dest\\
 destCols = C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\dest\\
+tptFolder = C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\
+

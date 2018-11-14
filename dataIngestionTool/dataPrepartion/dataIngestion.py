@@ -9,8 +9,8 @@ import pandas as pd
 import datetime
 import traceback
 
-#sys.path.append('../')
-import dataIngestionTool.comnUtil.logr as logg
+
+import logr as logg
 
 try:
     import pyspark
@@ -28,6 +28,43 @@ from configparser import ConfigParser
 
 # instantiate
 config = ConfigParser()
+
+
+def prepareTPTScript(spark,srcMap, schemaMap, destMap, queryMap, spark_logger):
+    for srcKey, src in srcMap.items():
+        spark_logger.warn("The processing singleSrcPrc() process for " + srcKey.split(":")[0])
+        #spark_logger.warn("_________________Started processing process Id : " + prcRow['prcId'] + " : ____________________")
+        try:
+            print("TEST200:", )
+            tptFolder = config.get('DIT_setup_config', 'tptFolder')
+            print("src Map")
+            print(srcMap)
+            print("schemaMap")
+            print(schemaMap)
+            print("destMap")
+            print(destMap)
+            print("queryMap")
+            print(queryMap)
+            srcColMap = pd.read_json(config.get('DIT_setup_config', 'srcCols') + 'srcCols_' + srcKey.split(":")[0] + '.json')
+            print(srcColMap)
+            destColMap = pd.read_json(config.get('DIT_setup_config', 'destCols') + 'destCols_' + srcKey.split(":")[1] + '.json')
+            print(destColMap)
+            #fname = tptFolder + PrcName + ".tpt"
+            #print("TEST201:" + fname)
+            #f_tpt = open(fname, "w")
+    
+            #f_tpt.write(ProcName)
+            #f_tpt.write("\n")
+    
+    
+        #f_tpt.close()
+
+        except Exception as e:
+            spark_logger.warn(str(datetime.datetime.now()) + "____________ Exception occurred in prepareTPTScript() ________________")
+            spark_logger.warn(str(datetime.datetime.now()) + " The exception occurred for process ID :: " + srcKey)
+            spark_logger.warn("Exception::msg %s" % str(e))  
+            print(traceback.format_exc())
+
 
 def findMapping(uniqSrc,uniqDest):
     # spark = pyspark.sql.SparkSession.builder.appName("DataIngestion").enableHiveSupport().getOrCreate()
@@ -90,7 +127,10 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap, spark_logger):
                         .option("url", dest["url"].any()).option("driver", dest["driver"].any())\
                         .option("dbtable",dest["table"].any()).option("user",dest["user"].any())\
                         .option("password", dest["password"].any()).save()
-                print("Data inserted successfully for---------- " + destKey )
+                    print("Data inserted successfully for---------- " + destKey )
+                elif dest['fileType'].any() == "DataBase":
+                    print("TEST107c::")
+                    prepareTPTScript(spark,srcMap, schemaMap, destMap, queryMap, spark_logger)
             except Exception as e:
                 print(
                     str(datetime.datetime.now()) + "____________ Exception occurred in processData() ________________")
@@ -124,13 +164,13 @@ def prepareMeta(sprkSession, prcRow):
             query= []
             if srcCol.empty :
                 query.append("cast(" + destCol['default'].astype(str).str.cat() + " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
-                print("in block 1"+destCol['colType'].str.cat() )
+                #print("in block 1"+destCol['colType'].str.cat() )
             elif destCol.get('transFunc') is None or destCol.get('transFunc').empty or destCol.get('transFunc').isnull().any().any() or destCol.get('transFunc').item()== "NA":
                 query.append("cast(" + srcCol['colName'].str.cat() + " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
-                print("in block 2"+srcCol['colName'].str.cat())
+                #print("in block 2"+srcCol['colName'].str.cat())
             else :
                 query.append("cast(" + destCol['transFunc'].str.cat().format(srcCol['colName'].str.cat())+  " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
-                print("in block 3"+srcCol['colName'].str.cat())
+                #print("in block 3"+srcCol['colName'].str.cat())
             
             if srcDest not in queryMap :
                 queryMap[srcDest] = query
@@ -199,14 +239,14 @@ def fetchSchema(srcCols, spark_logger):
 def processData(spark,mapping, srcMap, schemaMap, trgtMap, queryMap, spark_logger):
     # TODO find alternative to any and restrict it to one row using tail head etc
     # #If source and destination has one entries both side
-    print("src Map")
-    print(srcMap)
-    print("schemaMap")
-    print(schemaMap)
-    print("trgtMap")
-    print(trgtMap)
-    print("queryMap")
-    print(queryMap)
+    #print("src Map")
+    #print(srcMap)
+    #print("schemaMap")
+    #print(schemaMap)
+    #print("trgtMap")
+    #print(trgtMap)
+    #print("queryMap")
+    #print(queryMap)
     if mapping== "One_to_One" or mapping== "One_to_Many":
         print("queryMap")
         print(queryMap)
