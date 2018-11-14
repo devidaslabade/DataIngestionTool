@@ -5,3 +5,4 @@ srcDetails = C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\c
 srcCols = C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\source\\
 destDetails= C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\dest\\
 destCols = C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\dest\\
+tptFolder = C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\
