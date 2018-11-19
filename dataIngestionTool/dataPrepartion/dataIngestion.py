@@ -89,10 +89,25 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap, spark_logger):
         try:
             if src['fileType'].any() == "csv" or src['fileType'].any() == "json" or src[
                 'fileType'].any() == "parquet" or src['fileType'].any() == "orc":
-                df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).csv(
-                    src['srcLocation'].any())
-                df.show()
-                df.printSchema()
+                #df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).csv(
+                 #   src['srcLocation'].any())
+                #df = spark.read.option("header", src['header'].any()).option("inferSchema","true").csv(
+                 #  src['srcLocation'].any())
+                if src['inferSchema'].any() != "true":
+                    print("Inside if of InferSchema")
+                    df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).csv(
+                       src['srcLocation'].any())
+                else:
+                    print("Inside Else of InferSchema")
+                    df = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load(src['srcLocation'].any())
+                    df.printSchema()
+
+
+                print("df Describe Inside Else of InferSchema--------")
+            elif src['fileType'].any() == "delimited":
+                print("Inside delimited file")
+                df = spark.read.format("csv").option("header", src['header'].any()).option("delimiter", ",").load(src['srcLocation'].any())
+                print("df Describe Inside delimited file--------", df)
             elif src['fileType'].any() == "hivetable":
                 colName = ','.join(schemaMap[srcKey].fieldNames())
                 df = spark.sql('SELECT ' + colName + ' FROM ' + src["table"].any())
@@ -105,6 +120,11 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap, spark_logger):
                     "dbtable", src["table"].any()).option("user", src["user"].any()).option("password", src[
                     "password"].any()).load()
                 df.show()
+
+                print("------------Start of Source Statistics----------")
+                sourceStat = df.describe()
+                sourceStat.show()
+                print("------------End of Source Statistics----------")
         except Exception as e:
             print(str(datetime.datetime.now()) + "____________ Exception occurred in processData() ________________")
             print(str(datetime.datetime.now()) + " The iteration key for srcMap is :: " + srcKey)
@@ -116,10 +136,12 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap, spark_logger):
             try:
                 if dest['fileType'].any() == "csv" or dest['fileType'].any() == "json" or dest[
                     'fileType'].any() == "orc" or dest['fileType'].any() == "parquet":
-                    df.selectExpr(queryMap[destKey]).write.mode(dest["mode"].any()).format(dest["fileType"].any()).save(
+                    df.selectExpr(queryMap[destKey]).write.mode(dest["mode"].any()).format(dest["fileType"].any()).option("compression",dest["compression"].any()).save(
                         dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
                             "fileType"].any())
+
                     df.selectExpr(queryMap[destKey]).show(truncate=False)
+
                 elif dest['fileType'].any() == "hivetable":
                     df.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
                 elif dest['fileType'].any() == "jdbcclient":
@@ -131,6 +153,12 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap, spark_logger):
                 elif dest['fileType'].any() == "DataBase":
                     print("TEST107c::")
                     prepareTPTScript(spark,srcMap, schemaMap, destMap, queryMap, spark_logger)
+
+                print("------------Start of Destination Statistics----------")
+                destStat = df.describe()
+                destStat.show()
+                print("--------------End of Destination Statistics----------")
+
             except Exception as e:
                 print(
                     str(datetime.datetime.now()) + "____________ Exception occurred in processData() ________________")
@@ -138,7 +166,6 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap, spark_logger):
                 print("Exception::msg %s" % str(e))
                 print(traceback.format_exc())
     
-
 
 
         
@@ -273,6 +300,7 @@ def processFiles(argTuple):
             print("Exception::msg %s" % str(e))        
             print(traceback.format_exc())
 
+
 def main(configPath, prcPattern,pool):
     # parse existing file
     config.read(configPath)
@@ -295,6 +323,7 @@ def main(configPath, prcPattern,pool):
     # sprkSession=spark.newSession()
     threadPool.map(processFiles, zip(prcList, repeat(spark.newSession())))
     # spark.stop()
+
 
 
 if __name__ == "__main__":
