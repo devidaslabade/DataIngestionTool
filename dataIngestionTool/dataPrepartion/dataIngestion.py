@@ -11,6 +11,7 @@ import traceback
 
 #sys.path.append('../')
 import logr as logg
+from babel.util import distinct
 
 try:
     import pyspark
@@ -83,6 +84,58 @@ def findMapping(uniqSrc,uniqDest):
         print("Exception::msg %s" % str(e))
         print(traceback.format_exc())
         
+        
+def prepareJoinCodition(joinCondition,srcDest,prcRow,srcColMap):
+    try:
+        for row in prcRow['joinCol'].split("=") :
+            if srcDest.split(":")[0] in row.split(":")[0] :
+                srcCol = srcColMap[(srcColMap['srcId'] == srcDest.split(":")[0]) & (srcColMap['colId'] == int(row.split(":")[1]))]
+                print(srcDest.split(":")[0]+"."+srcCol['colName'].str.cat())
+                if "=" not in joinCondition :
+                    joinCondition += srcDest.split(":")[0]+" inner join {tab} on "+srcDest.split(":")[0]+"."+srcCol['colName'].str.cat()+" = {col}"
+                    #joinCondition.format(tab1=srcDest.split(":")[0],col1= srcDest.split(":")[0]+"."+srcCol['colName'].str.cat()+"=")
+                else :
+                    #joinCondition += srcDest.split(":")[0]+"."+srcCol['colName'].str.cat()
+                    joinCondition=joinCondition.format(tab = srcDest.split(":")[0], col = srcDest.split(":")[0]+"."+srcCol['colName'].str.cat())
+        return joinCondition            
+    except Exception as e:
+                print(
+                    str(datetime.datetime.now()) + "____________ Exception occurred in prepareJoinCodition() ________________")
+                print(str(datetime.datetime.now()) + " The iteration key  is :: " + srcDest)
+                print("Exception::msg %s" % str(e))
+                print(traceback.format_exc())            
+
+
+def prepareFilterCodition(joinCondition,srcDest,prcRow,srcColMap):
+    try:
+        print("Processing filter condition for "+srcDest)
+        print("the joincodition is "+joinCondition)
+        #pprint(prc)
+        print("printing ",prcRow['filterCondition'].split("@"))
+        
+        for row in prcRow['filterCondition'].split("@") :
+            if srcDest.split(":")[0] in row.split(":")[0] :
+                srcCol = srcColMap[(srcColMap['srcId'] == srcDest.split(":")[0]) & (srcColMap['colId'] == int(row.split(":")[1]))]
+                print(srcDest.split(":")[0]+"."+srcCol['colName'].str.cat())
+                if "=" not in joinCondition :
+                    joinCondition += " Where "+srcDest.split(":")[0]+"."+srcCol['colName'].str.cat()+ prcRow['filterCondition'].split("@")[1]
+                    #joinCondition.format(tab1=srcDest.split(":")[0],col1= srcDest.split(":")[0]+"."+srcCol['colName'].str.cat()+"=")
+                else :
+                    #joinCondition += srcDest.split(":")[0]+"."+srcCol['colName'].str.cat()
+                    #joinCondition=joinCondition.format(tab = srcDest.split(":")[0], col = srcDest.split(":")[0]+"."+srcCol['colName'].str.cat())
+                    joinCondition += " Where "+srcDest.split(":")[0]+"."+srcCol['colName'].str.cat()+ prcRow['filterCondition'].split("@")[1]
+                    print("in else block for checking only")
+        print("after joincondition is "+joinCondition)            
+        return joinCondition            
+    except Exception as e:
+                print(
+                    str(datetime.datetime.now()) + "____________ Exception occurred in prepareFilterCodition() ________________")
+                print(str(datetime.datetime.now()) + " The iteration key  is :: " + srcDest)
+                print("Exception::msg %s" % str(e))
+                print(traceback.format_exc()) 
+
+
+                        
 def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap, spark_logger):
     for srcKey, src in srcMap.items():
         spark_logger.warn("The processing singleSrcPrc() process for " + srcKey)
@@ -136,7 +189,71 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap, spark_logger):
                 print("Exception::msg %s" % str(e))
                 print(traceback.format_exc())
     
-
+def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition, spark_logger):
+    for srcKey, src in srcMap.items():
+        spark_logger.warn("The processing singleSrcPrc() process for " + srcKey)
+        try:
+            if src['fileType'].any() == "csv" or src['fileType'].any() == "json" or src[
+                'fileType'].any() == "parquet" or src['fileType'].any() == "orc":
+                df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).csv(
+                    src['srcLocation'].any())
+                df.createOrReplaceTempView(srcKey.split(":")[0])
+                df.show()
+                df.printSchema()
+            elif src['fileType'].any() == "hivetable":
+                colName = ','.join(schemaMap[srcKey].fieldNames())
+                df = spark.sql('SELECT ' + colName + ' FROM ' + src["table"].any())
+                df.show()
+            elif src['fileType'].any() == "jdbcclient":
+                print(src["table"].any())
+                df = spark.read.format("jdbc").option("url", src["url"].any()).option("driver",
+                                                                                      src["driver"].any()).option(
+                    "dbtable", src["table"].any()).option("user", src["user"].any()).option("password", src[
+                    "password"].any()).load()
+                df.show()
+        except Exception as e:
+            print(str(datetime.datetime.now()) + "____________ Exception occurred in processData() ________________")
+            print(str(datetime.datetime.now()) + " The iteration key for srcMap is :: " + srcKey)
+            print("Exception::msg %s" % str(e))
+            print(traceback.format_exc())
+            
+    query="select "
+    distinctDest="NA"        
+    for key, querylst in queryMap.items():
+        print("Adding query for"+key)
+        query+=','.join(querylst)+","
+        
+                
+            
+    for destKey, dest in destMap.items():
+        print("in for loop"+destKey)
+        print(distinctDest not in destKey.split(":")[1])
+        print(distinctDest)
+        if distinctDest not in destKey.split(":")[1]:
+            distinctDest=destKey.split(":")[1]
+            print("in if loop")
+            try:
+                if dest['fileType'].any() == "csv" or dest['fileType'].any() == "json" or dest['fileType'].any() == "orc" or dest['fileType'].any() == "parquet":
+                    #df.selectExpr(queryMap[destKey]).write.mode(dest["mode"].any()).format(dest["fileType"].any()).save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
+                    #            "fileType"].any())
+                    #df.selectExpr(queryMap[destKey]).show(truncate=False)
+                    print(":::::Executing Query::::::",query[0:-1]+joinCondition)
+                    spark.sql(query[0:-1]+joinCondition).show(truncate=False)
+                elif dest['fileType'].any() == "hivetable":
+                    df.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
+                elif dest['fileType'].any() == "jdbcclient":
+                    df.write.format("jdbc").mode(dest["mode"].any()).option("numPartitions", 8)\
+                        .option("url", dest["url"].any()).option("driver", dest["driver"].any())\
+                        .option("dbtable",dest["table"].any()).option("user",dest["user"].any())\
+                        .option("password", dest["password"].any()).save()
+                elif dest['fileType'].any() == "DataBase":
+                    print("TEST107c::")
+                    prepareTPTScript(spark,srcMap, schemaMap, destMap, queryMap, spark_logger)        
+            except Exception as e:
+                print(str(datetime.datetime.now()) + "____________ Exception occurred in processData() ________________")
+                print(str(datetime.datetime.now()) + " The iteration key for target Map is :: " + destKey)
+                print("Exception::msg %s" % str(e))
+                print(traceback.format_exc())
 
 
         
@@ -148,6 +265,8 @@ def prepareMeta(sprkSession, prcRow):
         schemaMap = {}
         srcMap = {}
         destMap = {}
+        #joinCondition=" from {tab1} inner join {tab2} on {col1} = {col2}"
+        joinCondition=" from "
         # Fetch process Id specific mapping file
         maps = pd.read_json(config.get('DIT_setup_config', 'prcMapping') + 'colMapping_' + prcRow['mapId'] + '.json')
         mapTab = maps[maps['mapId'] == prcRow['mapId']]
@@ -164,10 +283,10 @@ def prepareMeta(sprkSession, prcRow):
                 query.append("cast(" + destCol['default'].astype(str).str.cat() + " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
                 #print("in block 1"+destCol['colType'].str.cat() )
             elif destCol.get('transFunc') is None or destCol.get('transFunc').empty or destCol.get('transFunc').isnull().any().any() or destCol.get('transFunc').item()== "NA":
-                query.append("cast(" + srcCol['colName'].str.cat() + " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
+                query.append("cast(" +mapRow['srcId'] +"." + srcCol['colName'].str.cat() + " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
                 #print("in block 2"+srcCol['colName'].str.cat())
             else :
-                query.append("cast(" + destCol['transFunc'].str.cat().format(srcCol['colName'].str.cat())+  " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
+                query.append("cast(" + destCol['transFunc'].str.cat().format(mapRow['srcId'] +"." +srcCol['colName'].str.cat())+  " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
                 #print("in block 3"+srcCol['colName'].str.cat())
             
             if srcDest not in queryMap :
@@ -187,10 +306,14 @@ def prepareMeta(sprkSession, prcRow):
                 dest = pd.read_json(config.get('DIT_setup_config', 'destDetails') + 'dest_' + mapRow['destId'] + '.json')
                 srcMap[srcDest] = src[src['srcId'] == mapRow['srcId']]
                 destMap[srcDest] = dest[dest['destId'] == mapRow['destId']]
+                #Set join condition                
+                joinCondition=prepareJoinCodition(joinCondition,srcDest,prcRow,srcColMap)
+                joinCondition=prepareFilterCodition(joinCondition, srcDest, prcRow, srcColMap)
         print("Above process data --------",queryMap)
         mapping=findMapping(mapTab.srcId.nunique(),mapTab.destId.nunique())
         print("mapping----------" +mapping)
-        processData(sprkSession,mapping, srcMap, schemaMap, destMap, queryMap, spark_logger)
+        print("joining----"+joinCondition)
+        processData(sprkSession,mapping, srcMap, schemaMap, destMap, queryMap,joinCondition, spark_logger)
     except Exception as e:
         spark_logger.warn(str(datetime.datetime.now()) + "____________ Exception occurred in prepareMeta() ________________")
         spark_logger.warn(str(datetime.datetime.now()) + " The exception occurred for process ID :: " + prcRow['prcId'])
@@ -234,7 +357,7 @@ def fetchSchema(srcCols, spark_logger):
         print("Exception::msg %s" % str(e)) 
         print(traceback.format_exc())
 
-def processData(spark,mapping, srcMap, schemaMap, trgtMap, queryMap, spark_logger):
+def processData(spark,mapping, srcMap, schemaMap, trgtMap, queryMap,joinCondition, spark_logger):
     # TODO find alternative to any and restrict it to one row using tail head etc
     # #If source and destination has one entries both side
     #print("src Map")
@@ -251,6 +374,7 @@ def processData(spark,mapping, srcMap, schemaMap, trgtMap, queryMap, spark_logge
         singleSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap, spark_logger)
     elif mapping == "Many_to_One"  :
         print("in "+mapping) 
+        multiSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap,joinCondition, spark_logger)
     elif mapping == "Many_to_Many" :
         print("in "+mapping)
    
