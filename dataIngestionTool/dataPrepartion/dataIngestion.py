@@ -344,9 +344,9 @@ def publishKafka(spark, prcId,msg):
         app_id = spark.sparkContext.getConf().get('spark.app.id')
         app_name = spark.sparkContext.getConf().get('spark.app.name')
         current_date = str(datetime.datetime.now())
-        jsonString = {str(prcId+"-"+app_name+"-"+app_id+"-"+current_date)  : {"prc_id" : prcId ,"isException": "true","msg":msg}}
+        jsonString = {"prc_id" : prcId ,"isException": "true","msg":msg}
         producer = KafkaProducer(bootstrap_servers='localhost:9092',value_serializer=lambda v: json.dumps(v).encode('utf-8'))
-        producer.send('foobar', key=b'str(prcId+"-"+app_name+"-"+app_id+"-"+current_date)', value=b'{"prc_id" : prcId ,"isException": "true","msg":msg}')
+        #producer.send('foobar', key=b'str(prcId+"-"+app_name+"-"+app_id+"-"+current_date)', value=b'jsonString')
         #producer.send('test', jsonString)
         print("End of publishKafka")
 
