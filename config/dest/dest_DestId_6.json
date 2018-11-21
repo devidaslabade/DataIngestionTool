@@ -1,2 +1,4 @@
 [
-   {"destId":"DestId_6","destType":"mysql","destLocation":"C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\trgLoc\\","fileType":"jdbcclient" ,"table":"category_1","mode":"overwrite","url":"jdbc:mysql://localhost/spark","driver" :"com.mysql.jdbc.Driver", "user": "root","password":""}]
+ {"destId":"DestId_6","destType":"mysql","destLocation":"C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\trgLoc\\","fileType":"jdbcclient" ,"table":"category_1","mode":"overwrite","url":"jdbc:mysql://localhost/spark","driver" :"com.mysql.jdbc.Driver", "user": "root","password":""}
+]
+

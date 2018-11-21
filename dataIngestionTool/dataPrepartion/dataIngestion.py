@@ -8,8 +8,9 @@ from itertools import repeat
 import pandas as pd
 import datetime
 import traceback
-
-#sys.path.append('../')
+from kafka import SimpleProducer, KafkaClient
+from kafka import KafkaProducer
+from kafka import KafkaConsumer
 import logr as logg
 from babel.util import distinct
 
@@ -142,21 +143,43 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap, spark_logger):
         try:
             if src['fileType'].any() == "csv" or src['fileType'].any() == "json" or src[
                 'fileType'].any() == "parquet" or src['fileType'].any() == "orc":
-                df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).csv(
-                    src['srcLocation'].any())
-                df.show()
-                df.printSchema()
+                #df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).csv(
+                 #   src['srcLocation'].any())
+                #df = spark.read.option("header", src['header'].any()).option("inferSchema","true").csv(
+                 #  src['srcLocation'].any())
+                if src['inferSchema'].any() != "true":
+                    print("Inside if of InferSchema")
+                    df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).csv(
+                       src['srcLocation'].any())
+                else:
+                    print("Inside Else of InferSchema")
+                    df = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load(src['srcLocation'].any())
+                    df.printSchema()
+            elif src['fileType'].any() == "delimited":
+                print("Inside delimited file")
+                df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).option("delimiter", ",").csv(
+                       src['srcLocation'].any())
+                print("df Describe Inside delimited file--------", df)
             elif src['fileType'].any() == "hivetable":
+                print("Inside hivetable")
                 colName = ','.join(schemaMap[srcKey].fieldNames())
                 df = spark.sql('SELECT ' + colName + ' FROM ' + src["table"].any())
+                print("read from table" + src["table"].any())
                 df.show()
             elif src['fileType'].any() == "jdbcclient":
+                print("Inside jdbcclient")
                 print(src["table"].any())
                 df = spark.read.format("jdbc").option("url", src["url"].any()).option("driver",
                                                                                       src["driver"].any()).option(
                     "dbtable", src["table"].any()).option("user", src["user"].any()).option("password", src[
                     "password"].any()).load()
                 df.show()
+
+            #print("------------Start of Source Statistics----------")
+            #sourceStat = df.describe()
+            #sourceStat.show()
+            #sourceStat.createOrReplaceTempView("source")
+            #print("------------End of Source Statistics----------")
         except Exception as e:
             print(str(datetime.datetime.now()) + "____________ Exception occurred in processData() ________________")
             print(str(datetime.datetime.now()) + " The iteration key for srcMap is :: " + srcKey)
@@ -168,10 +191,12 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap, spark_logger):
             try:
                 if dest['fileType'].any() == "csv" or dest['fileType'].any() == "json" or dest[
                     'fileType'].any() == "orc" or dest['fileType'].any() == "parquet":
-                    df.selectExpr(queryMap[destKey]).write.mode(dest["mode"].any()).format(dest["fileType"].any()).save(
+                    df.selectExpr(queryMap[destKey]).write.mode(dest["mode"].any()).format(dest["fileType"].any()).option("compression",dest["compression"].any()).save(
                         dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
                             "fileType"].any())
+
                     df.selectExpr(queryMap[destKey]).show(truncate=False)
+
                 elif dest['fileType'].any() == "hivetable":
                     df.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
                 elif dest['fileType'].any() == "jdbcclient":
@@ -179,9 +204,24 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap, spark_logger):
                         .option("url", dest["url"].any()).option("driver", dest["driver"].any())\
                         .option("dbtable",dest["table"].any()).option("user",dest["user"].any())\
                         .option("password", dest["password"].any()).save()
+                    print("Data inserted successfully for---------- " + destKey )
                 elif dest['fileType'].any() == "DataBase":
                     print("TEST107c::")
-                    prepareTPTScript(spark,srcMap, schemaMap, destMap, queryMap, spark_logger)        
+                    prepareTPTScript(spark,srcMap, schemaMap, destMap, queryMap, spark_logger)
+
+
+                #print("------------Start of Destination Statistics----------")
+                #destStat = df.selectExpr(queryMap[destKey]).describe()
+                #destStat.show()
+                #destStat.createOrReplaceTempView("dest")
+                #print("--------------End of Destination Statistics----------")
+
+                #print("------------Start of Comaparison Statistics----------")
+                #spark.sql("select s.summary,s.category_id, d.cat_id,(s.category_id - d.cat_id) AS Category_diff,s.category_department_id,d.cat_dpt_id,(s.category_department_id - d.cat_dpt_id) AS diff_Category_department,s.category_name,d.cat_name,(s.category_name = d.cat_name) AS diff_Category_Name from source s join dest d on s.summary  = d.summary").show()
+                #spark.sql("select CAST(s.category_name AS int),CAST(d.cat_name AS INT) from source s join dest d on s.summary  = d.summary").show()
+                #print("------------End of Comaparison Statistics----------")
+
+
             except Exception as e:
                 print(
                     str(datetime.datetime.now()) + "____________ Exception occurred in processData() ________________")
@@ -255,7 +295,6 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition, spark_
                 print("Exception::msg %s" % str(e))
                 print(traceback.format_exc())
 
-
         
 def prepareMeta(sprkSession, prcRow):
     spark_logger = logg.Log4j(sprkSession, prcRow['prcId'])
@@ -313,12 +352,16 @@ def prepareMeta(sprkSession, prcRow):
         mapping=findMapping(mapTab.srcId.nunique(),mapTab.destId.nunique())
         print("mapping----------" +mapping)
         print("joining----"+joinCondition)
+        
+        msg = "Processing start for active processess"
+        #publishKafka(sprkSession, prcRow['prcId'], msg)
         processData(sprkSession,mapping, srcMap, schemaMap, destMap, queryMap,joinCondition, spark_logger)
     except Exception as e:
         spark_logger.warn(str(datetime.datetime.now()) + "____________ Exception occurred in prepareMeta() ________________")
         spark_logger.warn(str(datetime.datetime.now()) + " The exception occurred for process ID :: " + prcRow['prcId'])
-        spark_logger.warn("Exception::msg %s" % str(e)) 
-        print(traceback.format_exc())       
+        spark_logger.warn("Exception::msg %s" % str(e))
+        print(traceback.format_exc())
+        #publishKafka(sprkSession,prcRow['prcId'],"")
 
                 
 def fetchSchema(srcCols, spark_logger):
@@ -395,6 +438,7 @@ def processFiles(argTuple):
             print("Exception::msg %s" % str(e))        
             print(traceback.format_exc())
 
+
 def main(configPath, prcPattern,pool):
     # parse existing file
     config.read(configPath)
@@ -417,6 +461,32 @@ def main(configPath, prcPattern,pool):
     # sprkSession=spark.newSession()
     threadPool.map(processFiles, zip(prcList, repeat(spark.newSession())))
     # spark.stop()
+
+def publishKafka(spark, prcId,msg):
+    # spark = pyspark.sql.SparkSession.builder.appName("DataIngestion").enableHiveSupport().getOrCreate()
+    try:
+        print("Start publishKafka")
+        app_id = spark.sparkContext.getConf().get('spark.app.id')
+        app_name = spark.sparkContext.getConf().get('spark.app.name')
+        current_date = str(datetime.datetime.now())
+        jsonString = {str(prcId+"-"+app_name+"-"+app_id+"-"+current_date)  : {"prc_id" : prcId ,"isException": "true","msg":msg}}
+        producer = KafkaProducer(bootstrap_servers='localhost:9092',value_serializer=lambda v: json.dumps(v).encode('utf-8'))
+        producer.send('foobar', key=b'str(prcId+"-"+app_name+"-"+app_id+"-"+current_date)', value=b'{"prc_id" : prcId ,"isException": "true","msg":msg}')
+        #producer.send('test', jsonString)
+        print("End of publishKafka")
+
+        print("Start consuming")
+        consumer = KafkaConsumer(bootstrap_servers='localhost:9092')
+        consumer.subscribe(['test'])
+        for msg in consumer:
+            print(msg)
+
+        print("End Consuming")
+    except Exception as e:
+        print(str(datetime.datetime.now()) + "____________ Exception occurred in publishKafka() ________________")
+        print("Exception::msg %s" % str(e))
+        print(traceback.format_exc())
+
 
 
 if __name__ == "__main__":
