@@ -8,8 +8,9 @@ from itertools import repeat
 import pandas as pd
 import datetime
 import traceback
-
-
+from kafka import SimpleProducer, KafkaClient
+from kafka import KafkaProducer
+from kafka import KafkaConsumer
 import logr as logg
 
 try:
@@ -101,19 +102,19 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap, spark_logger):
                     print("Inside Else of InferSchema")
                     df = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load(src['srcLocation'].any())
                     df.printSchema()
-
-
-                print("df Describe Inside Else of InferSchema--------")
             elif src['fileType'].any() == "delimited":
                 print("Inside delimited file")
-                df = spark.read.format("csv").option("header", src['header'].any()).option("delimiter", ",").load(src['srcLocation'].any())
+                df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).option("delimiter", ",").csv(
+                       src['srcLocation'].any())
                 print("df Describe Inside delimited file--------", df)
             elif src['fileType'].any() == "hivetable":
+                print("Inside hivetable")
                 colName = ','.join(schemaMap[srcKey].fieldNames())
                 df = spark.sql('SELECT ' + colName + ' FROM ' + src["table"].any())
                 print("read from table" + src["table"].any())
                 df.show()
             elif src['fileType'].any() == "jdbcclient":
+                print("Inside jdbcclient")
                 print(src["table"].any())
                 df = spark.read.format("jdbc").option("url", src["url"].any()).option("driver",
                                                                                       src["driver"].any()).option(
@@ -121,10 +122,11 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap, spark_logger):
                     "password"].any()).load()
                 df.show()
 
-                print("------------Start of Source Statistics----------")
-                sourceStat = df.describe()
-                sourceStat.show()
-                print("------------End of Source Statistics----------")
+            #print("------------Start of Source Statistics----------")
+            #sourceStat = df.describe()
+            #sourceStat.show()
+            #sourceStat.createOrReplaceTempView("source")
+            #print("------------End of Source Statistics----------")
         except Exception as e:
             print(str(datetime.datetime.now()) + "____________ Exception occurred in processData() ________________")
             print(str(datetime.datetime.now()) + " The iteration key for srcMap is :: " + srcKey)
@@ -154,10 +156,18 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap, spark_logger):
                     print("TEST107c::")
                     prepareTPTScript(spark,srcMap, schemaMap, destMap, queryMap, spark_logger)
 
-                print("------------Start of Destination Statistics----------")
-                destStat = df.describe()
-                destStat.show()
-                print("--------------End of Destination Statistics----------")
+
+                #print("------------Start of Destination Statistics----------")
+                #destStat = df.selectExpr(queryMap[destKey]).describe()
+                #destStat.show()
+                #destStat.createOrReplaceTempView("dest")
+                #print("--------------End of Destination Statistics----------")
+
+                #print("------------Start of Comaparison Statistics----------")
+                #spark.sql("select s.summary,s.category_id, d.cat_id,(s.category_id - d.cat_id) AS Category_diff,s.category_department_id,d.cat_dpt_id,(s.category_department_id - d.cat_dpt_id) AS diff_Category_department,s.category_name,d.cat_name,(s.category_name = d.cat_name) AS diff_Category_Name from source s join dest d on s.summary  = d.summary").show()
+                #spark.sql("select CAST(s.category_name AS int),CAST(d.cat_name AS INT) from source s join dest d on s.summary  = d.summary").show()
+                #print("------------End of Comaparison Statistics----------")
+
 
             except Exception as e:
                 print(
@@ -219,12 +229,15 @@ def prepareMeta(sprkSession, prcRow):
         print("Above process data --------",queryMap)
         mapping=findMapping(mapTab.srcId.nunique(),mapTab.destId.nunique())
         print("mapping----------" +mapping)
+        msg = "Processing start for active processess"
+        publishKafka(sprkSession, prcRow['prcId'], msg)
         processData(sprkSession,mapping, srcMap, schemaMap, destMap, queryMap, spark_logger)
     except Exception as e:
         spark_logger.warn(str(datetime.datetime.now()) + "____________ Exception occurred in prepareMeta() ________________")
         spark_logger.warn(str(datetime.datetime.now()) + " The exception occurred for process ID :: " + prcRow['prcId'])
-        spark_logger.warn("Exception::msg %s" % str(e)) 
-        print(traceback.format_exc())       
+        spark_logger.warn("Exception::msg %s" % str(e))
+        print(traceback.format_exc())
+        #publishKafka(sprkSession,prcRow['prcId'],"")
 
                 
 def fetchSchema(srcCols, spark_logger):
@@ -323,6 +336,31 @@ def main(configPath, prcPattern,pool):
     # sprkSession=spark.newSession()
     threadPool.map(processFiles, zip(prcList, repeat(spark.newSession())))
     # spark.stop()
+
+def publishKafka(spark, prcId,msg):
+    # spark = pyspark.sql.SparkSession.builder.appName("DataIngestion").enableHiveSupport().getOrCreate()
+    try:
+        print("Start publishKafka")
+        app_id = spark.sparkContext.getConf().get('spark.app.id')
+        app_name = spark.sparkContext.getConf().get('spark.app.name')
+        current_date = str(datetime.datetime.now())
+        jsonString = {str(prcId+"-"+app_name+"-"+app_id+"-"+current_date)  : {"prc_id" : prcId ,"isException": "true","msg":msg}}
+        producer = KafkaProducer(bootstrap_servers='localhost:9092',value_serializer=lambda v: json.dumps(v).encode('utf-8'))
+        producer.send('foobar', key=b'str(prcId+"-"+app_name+"-"+app_id+"-"+current_date)', value=b'{"prc_id" : prcId ,"isException": "true","msg":msg}')
+        #producer.send('test', jsonString)
+        print("End of publishKafka")
+
+        print("Start consuming")
+        consumer = KafkaConsumer(bootstrap_servers='localhost:9092')
+        consumer.subscribe(['test'])
+        for msg in consumer:
+            print(msg)
+
+        print("End Consuming")
+    except Exception as e:
+        print(str(datetime.datetime.now()) + "____________ Exception occurred in publishKafka() ________________")
+        print("Exception::msg %s" % str(e))
+        print(traceback.format_exc())
 
 
 
