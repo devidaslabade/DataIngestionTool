@@ -29,8 +29,6 @@ from pyspark.sql.types import *
 
 def main():
     spark = pyspark.sql.SparkSession.builder.appName("DataIngestion").enableHiveSupport().getOrCreate()
-    msg = "End Processing"
-    prcId = "PrcId_1"
     consumeKafka()
 
 
@@ -38,29 +36,32 @@ def consumeKafka():
     # spark = pyspark.sql.SparkSession.builder.appName("DataIngestion").enableHiveSupport().getOrCreate()
     try:
         print("Start consuming")
-        consumer = KafkaConsumer(bootstrap_servers='localhost:9092')
-        consumer.subscribe(['test'])
-        # for msg in consumer:
-        #    print(msg)
-        actual_data = []
-        for msg in consumer:
+        consumer = KafkaConsumer('data_ingestion', bootstrap_servers=['localhost:9092'],auto_offset_reset='earliest',enable_auto_commit=True,group_id=None)#,value_deserializer=lambda m: json.loads(m.decode('utf-8')))
+        #consumer = KafkaConsumer('data_ingestion', bootstrap_servers=['localhost:9092'], auto_offset_reset='earliest')
+        #dit_logs
+        counter = 0
+        for message in consumer:
+            print(message)
             print("Inside consumer")
-            message = next(consumer)
-            data = {'key': message.key, 'value': message.value}
-            file = message.key
-            actual_data.append(data)
-            print(actual_data)
-            f = open("C:\\Users\\aj250046\\Documents\\DIT2\\logs\\file.txt", "w+")
-
-        #consumer.close()
-        # KafkaConsumer(consumer_timeout_ms=5000)
-
-        print("End Consuming")
-
-        if len(actual_data) > 0:
-            print('Publishing records..')
-            for rec in actual_data:
-                print("Records--------", rec)
+            counter = counter + 1
+            print("message counter -------------",counter)
+            #message = next(consumer)
+            if message.key is not None and message.value is not None:
+                print(message)
+                value_deserializer = lambda m: json.loads(m.decode('utf-8'))
+                data = {'key': message.key, 'value': message.value}
+                #data = {'key': message.key, 'value': message.value}
+                file = str(message.key.decode('utf-8'))
+                print("value----------", message.value)
+                print("key----------", file)
+                print("data----------"+str(data)+"\n")
+                actual_data = str(message.value)+"\n"
+                print(actual_data)
+                file_path = "C:\\Users\\aj250046\\Documents\\DIT2\\logs\\" + file + ".txt"
+                with open(file_path,mode = 'a',encoding = 'utf-8') as f:
+                    print("The message is ---------"+actual_data)
+                    f.write(actual_data)
+            print("End consuming :")
 
     except Exception as e:
         print(str(datetime.datetime.now()) + "____________ Exception occurred in publishKafka() ________________")
