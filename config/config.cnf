@@ -1,9 +1,9 @@
 [DIT_setup_config]
-prcDetails=C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\process\\
-prcMapping=C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\process\\
-srcDetails =C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\source\\
-srcCols = C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\source\\
-destDetails= C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\dest\\
-destCols = C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\dest\\
-tptFolder = C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\
+prcDetails=C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\process\\
+prcMapping=C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\process\\
+srcDetails =C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\source\\
+srcCols = C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\source\\
+destDetails= C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\dest\\
+destCols = C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\dest\\
+tptFolder = C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\
 
