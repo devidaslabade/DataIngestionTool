@@ -66,6 +66,20 @@ Make sure that there is no col mapping and use follwing entry for destcols Json 
 	
 	Json element syntax : "default":"from_unixtime(unix_timestamp(), 'yy-MM-dd hh:mm:ssZ')"
 
+	
+### Joining source Data sets
+Multiple Data sources can be joined to combine the results into one before publishing the same in a unified data format. The join can be made by adding following Json element syntax in process file. Where the joinCol's value signifies the join between source_one_id:source_one_column_id=another_source_to_be_joined_id:another_source_column_id
+
+***"joinCol":"SrcId_1:2=SrcId_2:1"***
+
+
+
+### Filtering conditional Data sets
+
+The data set can be filtered before being published to destination. The json element syntax to be added in process file is ***"filterCondition":"SrcId_2:2@='Fitness'"***. Where the filterCondition means that SrcId_2's column Id 2 should be equal to "Fitness".
+
+
+### 	
 
 
 ### Supported SQL functions 
@@ -169,3 +183,6 @@ Json element syntax : "transFunc":"from_unixtime(unix_timestamp({0}, 'yyyy-dd-MM
 		Json element syntax : "transFunc":"ceil({0})"
 	5. ceiling(DOUBLE a)
 		Json element syntax : "transFunc":"ceiling({0})"
+
+		
+		

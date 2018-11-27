@@ -207,8 +207,7 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition, spa
 
 
             except Exception as e:
-                print(
-                    str(datetime.datetime.now()) + "____________ Exception occurred in processData() ________________")
+                print(str(datetime.datetime.now()) + "____________ Exception occurred in processData() ________________")
                 print(str(datetime.datetime.now()) + " The iteration key for target Map is :: " + destKey)
                 print("Exception::msg %s" % str(e))
                 print(traceback.format_exc())
