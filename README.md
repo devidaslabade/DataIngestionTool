@@ -11,6 +11,33 @@ For excuting jobs :
 
 python driver.py --job=dataPrepartion.dataIngestion --configLoc=C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf --prcs="prc_PrcId_[0-9].json" --pool=3
 
+### Supported Data Sources
+1. Delimited Text files (CSV, TAB etc )
+	* ***Delimiter*** : The file type for Text based files can either be "csv" or "delimited" but the delimiter value is mandatory to be added in source file having following syntax for csv :  ***"delimiter":","***
+	* ***Infer Schema*** : For text based files schema can be inferred by adding the following json filed in Source files : ***"inferSchema":"true"***
+	* ***Header*** : Text based files can also have header information and hence the same can be utilized for column refrence by adding following json filed in Source files :  ***"header":"true"***
+2. ORC
+3. Parquet
+4. Json
+5. Hive Table
+6. JDBC data sources
+
+### Desination Data source writing modes 
+1. ***append*** :Append mode means that when saving to a data source, if data/table already exists, contents are expected to be appended to existing data.
+2. ***overwrite*** : Overwrite mode means that when saving to a data source, if data/table already exists, existing data is expected to be overwritten by the current contents.
+3. ***ignore*** :Ignore mode means that when saving to a data source, if data already exists, then the current content will not be saved or in other words no change the existing data will take place.
+4. ***errorifexists*** : ErrorIfExists mode means that when saving to a data source, if data already exists, an exception is expected to be thrown.
+
+The writing mode can be set in destination detail file by adding the json filed : ***"mode":"overwrite"***
+
+### Compression support for Data sources
+
+1. Delimited Text files (CSV, TAB etc ) : (none, bzip2, gzip, lz4, snappy and deflate).
+2. json : (none, bzip2, gzip, lz4, snappy and deflate).
+3. orc ; (none, snappy, zlib, and lzo)
+4. parquet : (none, uncompressed, snappy, gzip, lzo, brotli, lz4, and zstd)
+
+The compression can be set in destination detail files by adding the json filed : ***"compression":"bzip2"***
 
 
 ### Supported datatypes 

@@ -110,12 +110,10 @@ def prepareJoinCodition(joinCondition,srcDest,prcRow,srcColMap):
 def prepareFilterCodition(srcDest,prcRow,srcColMap):
     try:
         print("Processing filter condition for "+srcDest)
-        #pprint(prc)
-        print("printing ",prcRow['filterCondition'].split("@"))        
         for row in prcRow['filterCondition'].split("@") :
             if srcDest.split(":")[0] in row.split(":")[0] :
+                #Fetch the column details from src col mapping having same srcID and ColID
                 srcCol = srcColMap[(srcColMap['srcId'] == srcDest.split(":")[0]) & (srcColMap['colId'] == int(row.split(":")[1]))]
-                print(srcDest.split(":")[0]+"."+srcCol['colName'].str.cat())
                 return " Where "+srcDest.split(":")[0]+"."+srcCol['colName'].str.cat()+ prcRow['filterCondition'].split("@")[1]
             else :
                 return ""            
@@ -132,45 +130,31 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition, spa
     for srcKey, src in srcMap.items():
         spark_logger.warn("The processing singleSrcPrc() process for " + srcKey)
         try:
-            if src['fileType'].any() == "csv" or src['fileType'].any() == "json" or src[
-                'fileType'].any() == "parquet" or src['fileType'].any() == "orc":
-                #df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).csv(
-                 #   src['srcLocation'].any())
-                #df = spark.read.option("header", src['header'].any()).option("inferSchema","true").csv(
-                 #  src['srcLocation'].any())  \src['inferSchema'].any() != "true"
-                if src.get('inferSchema') is None :
-                    print("Inside if of InferSchema")
-                    df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).csv(
-                       src['srcLocation'].any())
+            if  src['fileType'].any() == "json" or src['fileType'].any() == "parquet" or src['fileType'].any() == "orc":
+                df = spark.read.format(src['fileType'].any()).schema(schemaMap[srcKey]).load(src['srcLocation'].any())
+                #.option("inferSchema", src.get('inferSchema').str.cat().lower()) Not required
+            elif src['fileType'].any() == "csv" or src['fileType'].any() == "delimited":
+                if src.get('delimiter') is None :
+                    delimiter=","
+                else :
+                    delimiter=src.get('delimiter').str.cat()    
+                if src.get('inferSchema') is None or src.get('inferSchema').str.cat().lower() == "false" :
+                    df = spark.read.format("csv").schema(schemaMap[srcKey]).option("header", src['header'].any()).option("delimiter", delimiter).load(src['srcLocation'].any())
+             
                 else:
-                    print("Inside Else of InferSchema and vlaue is " + src.get('inferSchema'))
-                    df = spark.read.format("csv").option("header", "true").option("inferSchema", lower(destCol.get('inferSchema'))).load(src['srcLocation'].any())
-                    df.printSchema()
-            elif src['fileType'].any() == "delimited":
-                print("Inside delimited file")
-                df = spark.read.schema(schemaMap[srcKey]).option("header", src['header'].any()).option("delimiter", ",").csv(
-                       src['srcLocation'].any())
-                print("df Describe Inside delimited file--------", df)
+                    df = spark.read.format("csv").option("header", src['header'].any()).option("delimiter", delimiter).option("inferSchema", src.get('inferSchema').str.cat().lower()).load(src['srcLocation'].any())
+
             elif src['fileType'].any() == "hivetable":
                 print("Inside hivetable")
                 colName = ','.join(schemaMap[srcKey].fieldNames())
                 df = spark.sql('SELECT ' + colName + ' FROM ' + src["table"].any())
                 print("read from table" + src["table"].any())
-                df.show()
             elif src['fileType'].any() == "jdbcclient":
                 print("Inside jdbcclient")
                 print(src["table"].any())
-                df = spark.read.format("jdbc").option("url", src["url"].any()).option("driver",
-                                                                                      src["driver"].any()).option(
-                    "dbtable", src["table"].any()).option("user", src["user"].any()).option("password", src[
-                    "password"].any()).load()
-                df.show()
-
-            #print("------------Start of Source Statistics----------")
-            #sourceStat = df.describe()
-            #sourceStat.show()
-            #sourceStat.createOrReplaceTempView("source")
-            #print("------------End of Source Statistics----------")
+                df = spark.read.format("jdbc").option("url", src["url"].any()).option("driver",src["driver"].any()).option("dbtable", src["table"].any()).option("user", src["user"].any()).option("password", src["password"].any()).load()
+            df.show()
+            df.printSchema()  
             df.createOrReplaceTempView(srcKey.split(":")[0])
         except Exception as e:
             print(str(datetime.datetime.now()) + "____________ Exception occurred in processData() ________________")
@@ -183,11 +167,18 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition, spa
             print(queryMap[destKey])
             print(','.join(queryMap[destKey]))
             try:
+                #Fetch value of compression
+                if dest.get('compression') is None :
+                    compression="none"
+                else :
+                    compression=dest.get('compression').str.cat() 
+                    
+                    
                 if dest['fileType'].any() == "csv" or dest['fileType'].any() == "json" or dest[
                     'fileType'].any() == "orc" or dest['fileType'].any() == "parquet":
-                    #df.selectExpr(queryMap[destKey]).write.mode(dest["mode"].any()).format(dest["fileType"].any()).option("compression",dest["compression"].any()).save(
-                    #    dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
-                    #        "fileType"].any())
+                    spark.sql("select "+','.join(queryMap[destKey])+" from "+destKey.split(":")[0]+filterCondition).write.mode(dest["mode"].any()).format(dest["fileType"].any()).option("compression",compression).save(
+                        dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
+                            "fileType"].any())
                     spark.sql("select "+','.join(queryMap[destKey])+" from "+destKey.split(":")[0]+filterCondition).show(truncate=False)
                     #df.selectExpr(queryMap[destKey]).show(truncate=False)
                 elif dest['fileType'].any() == "hivetable":
@@ -305,26 +296,23 @@ def prepareMeta(sprkSession, prcRow):
         maps = pd.read_json(config.get('DIT_setup_config', 'prcMapping') + 'colMapping_' + prcRow['mapId'] + '.json')
         mapTab = maps[maps['mapId'] == prcRow['mapId']]
         for mapId, mapRow in mapTab.iterrows():
-            # Fetch source and destination column mapping files
+            # Fetch source and destination column mapping files with respect to each source and column 
             srcColMap = pd.read_json(config.get('DIT_setup_config', 'srcCols') + 'srcCols_' + mapRow['srcId'] + '.json')
             destColMap = pd.read_json(config.get('DIT_setup_config', 'destCols') + 'destCols_' + mapRow['destId'] + '.json')
             srcCol = srcColMap[(srcColMap['srcId'] == mapRow['srcId']) & (srcColMap['colId'] == mapRow['srcColId'])]
             destCol = destColMap[(destColMap['destId'] == mapRow['destId']) & (destColMap['colId'] == mapRow['destColId'])]
             # query.append(srcCol['colName'].str.cat()+" as "+destCol['colName'].str.cat())
-            print("-------------- Printing src cols ------------------",srcCol)
             srcDest = mapRow['srcId'] + ":" + mapRow['destId']
             query= []
             if srcCol.empty :
                 possibleError="\n 1.Default column is not set in Destination \n 2.Process mapping maps to a source column that does not exist"
                 query.append("cast(" + destCol['default'].astype(str).str.cat() + " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
-                #print("in block 1"+destCol['colType'].str.cat() )
             elif destCol.get('transFunc') is None or destCol.get('transFunc').empty or destCol.get('transFunc').isnull().any().any() or destCol.get('transFunc').item()== "NA":
                 query.append("cast(" +mapRow['srcId'] +"." + srcCol['colName'].str.cat() + " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
-                #print("in block 2"+srcCol['colName'].str.cat())
             else :
                 query.append("cast(" + destCol['transFunc'].str.cat().format(mapRow['srcId'] +"." +srcCol['colName'].str.cat())+  " as " + destCol['colType'].str.cat() + " ) as " + destCol['colName'].str.cat())
-                #print("in block 3"+srcCol['colName'].str.cat())
             
+            #For every src:key pair create a SQL query map
             if srcDest not in queryMap :
                 queryMap[srcDest] = query
             else :
@@ -348,14 +336,9 @@ def prepareMeta(sprkSession, prcRow):
                 #TODO device a logic to seperately write filter queries 
                 if prcRow.get('filterCondition') is not None:     
                     filterCondition+=prepareFilterCodition(srcDest, prcRow, srcColMap)
-                    
-        print("Above process data --------",queryMap)
+        #Identify the process mapping     
         mapping=findMapping(mapTab.srcId.nunique(),mapTab.destId.nunique())
-        print("mapping----------" +mapping)
-        print("joining----"+joinCondition)
-        print("the filter condition is "+filterCondition)
-        msg = "Processing start for active processess"
-        #publishKafka(sprkSession, prcRow['prcId'], msg)
+        #Process data 
         processData(sprkSession,mapping, srcMap, schemaMap, destMap, queryMap,joinCondition,filterCondition, spark_logger)
     except Exception as e:
         spark_logger.warn(str(datetime.datetime.now()) + "____________ Exception occurred in prepareMeta() ________________")
@@ -368,7 +351,7 @@ def prepareMeta(sprkSession, prcRow):
                 
 def fetchSchema(srcCols, spark_logger):
     try:
-        spark_logger.warn("Fetching schema values for SRC Id " + srcCols['srcId'].str.cat())
+        spark_logger.warn("Fetching schema values for SRC Id " + srcCols['srcId'].any())
         fields = []
         for idx, clm in srcCols.iterrows():
             if clm['colType'].lower() == "String".lower():
@@ -413,12 +396,15 @@ def processData(spark,mapping, srcMap, schemaMap, trgtMap, queryMap,joinConditio
     #print(trgtMap)
     #print("queryMap")
     #print(queryMap)
+    print("The process mapping of the current process is :: " +mapping)
+    #print("joining----"+joinCondition)
+    #print("the filter condition is "+filterCondition)
+    #print("Above process data --------",queryMap)
+    msg = "Processing start for active processess"   
+    #publishKafka(sprkSession, prcRow['prcId'], msg)
     if mapping== "One_to_One" or mapping== "One_to_Many":
-        print("queryMap")
-        print(queryMap)
         singleSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap,filterCondition, spark_logger)
     elif mapping == "Many_to_One"  :
-        print("in "+mapping) 
         multiSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap,joinCondition,filterCondition, spark_logger)
     elif mapping == "Many_to_Many" :
         print("in "+mapping)
@@ -456,7 +442,7 @@ def main(configPath, prcPattern,pool):
             prcList.append(os.path.join(dir, match.group()))
     
     threadPool = ThreadPool(pool)
-    print("list of files are ::", prcList)
+    print("List of process files to be processed are :: \n", prcList)
     spark = pyspark.sql.SparkSession.builder.appName("DataIngestion").enableHiveSupport().getOrCreate()
     
     # lst = glob.glob(config.get('DIT_setup_config', 'prcDetails') + 'prc_PrcId_[0-9].json')
@@ -494,6 +480,6 @@ def publishKafka(spark, prcId,msg):
 if __name__ == "__main__":
     prcs="prc_PrcId_[0-9].json"
     pool=3
-    #sys.exit(main('C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf', prcs,pool))
-    sys.exit(main('C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\config.cnf',prcs,pool))
+    sys.exit(main('C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf', prcs,pool))
+    #sys.exit(main('C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\config.cnf',prcs,pool))
 
