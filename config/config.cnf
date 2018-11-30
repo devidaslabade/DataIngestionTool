@@ -7,3 +7,10 @@ destDetails= C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\c
 destCols = C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\dest\\
 tptFolder = C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\
 
+[DIT_Kafka_config]
+KAFKA_BROKERS= 10.0.75.1:9092
+TOPIC=test
+GROUP_ID=pyhton_grp_id
+AUTO_OFFSET_RESET=earliest
+ENABLE_AUTO_COMMIT=True
+LOG_DIR=C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\trgLoc\\

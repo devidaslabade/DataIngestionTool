@@ -13,14 +13,10 @@ class Log4j(object):
     :param spark: SparkSession object.
     """
 
-    def __init__(self, spark,prc=None):
-        # get spark app details with which to prefix all messages
-        app_id = spark.sparkContext.getConf().get('spark.app.id')
-        app_name = spark.sparkContext.getConf().get('spark.app.name')
-
+    def __init__(self,spark,key=None):
         log4j = spark._jvm.org.apache.log4j
         #message_prefix = '<' + app_name + ' ' + app_id + '>'
-        message_prefix = '<' + app_name + ':' + app_id +':'+prc+'> '
+        message_prefix = '<:: '+ key+'::> '
         self.logger = log4j.LogManager.getLogger(message_prefix)
 
     def error(self, message):
