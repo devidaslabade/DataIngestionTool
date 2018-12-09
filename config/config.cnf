@@ -13,4 +13,4 @@ TOPIC=test
 GROUP_ID=pyhton_grp_id
 AUTO_OFFSET_RESET=earliest
 ENABLE_AUTO_COMMIT=True
-LOG_DIR=C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\trgLoc\\
+LOG_DIR=C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\test_dataIngestionTool\\trgLoc\\

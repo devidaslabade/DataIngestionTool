@@ -15,7 +15,7 @@ def consumeKafka(topic,kafkaBrokers,autoOffsetReset,enableAutoCommit,groupId):
             if message.key is not None and message.value is not None:
                 logFile = str(message.key.decode('utf-8'))
                 content=str(json.loads(message.value.decode('utf-8')))+"\n"
-                file_path = config.get('DIT_Kafka_config', 'LOG_DIR') + file + ".log"
+                file_path = config.get('DIT_Kafka_config', 'LOG_DIR') + logFile + ".log"
                 with open(file_path,mode = 'a',encoding = 'utf-8') as filePtr:
                     filePtr.write(content)
         print("End consuming :")
