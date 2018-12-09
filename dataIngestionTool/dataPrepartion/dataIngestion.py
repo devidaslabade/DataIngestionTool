@@ -3,6 +3,7 @@ import re
 import sys
 import json
 import glob
+import itertools
 from multiprocessing.dummy import Pool as ThreadPool
 from itertools import repeat
 import pandas as pd
@@ -275,21 +276,27 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
             publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
             publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
             
-    query="select "
+    queryExpr=""
     #List to keep track of unique destination for publishing
-    distinctDest=[]        
-    for qkey, querylst in queryMap.items():
-        query+=','.join(querylst)+","
+    distinctDest=[]  
+    if joinCondition == "NA" and filterCondition == "NA" :
+        #Should iterate only once as query is being provided
+        for qkey, queryStr in queryMap.items():
+            queryExpr=queryStr[0]
+    else :
+        query="select "    
+        for qkey, querylst in queryMap.items():
+            query+=','.join(querylst)+","
+        queryExpr=query[0:-1]+joinCondition+filterCondition
         
-                
             
     for destKey, dest in destMap.items():
         if destKey.split(":")[1] not in distinctDest :
             distinctDest.append(destKey.split(":")[1])
             publishKafka(producer,spark_logger,key,"INFO","Publishing the records for Dest Id :: "+destKey.split(":")[1])
             try:
-                dfWrite=spark.sql(query[0:-1]+joinCondition+filterCondition)
-                publishKafka(producer,spark_logger,key,"INFO",":::::Executing Query::::::"+query[0:-1]+joinCondition+filterCondition)
+                publishKafka(producer,spark_logger,key,"INFO",":::::Executing Query::::::"+queryExpr)
+                dfWrite=spark.sql(queryExpr)                
                 if dest['fileType'].any() == "csv" or dest['fileType'].any() == "json" or dest['fileType'].any() == "orc" or dest['fileType'].any() == "parquet":
                     publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " at "+dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
                                 "fileType"].any())
@@ -384,6 +391,63 @@ def prepareMeta(sprkSession, prcRow,key,producer,spark_logger):
         publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
         publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
 
+
+def executeQuery(sprkSession, prcRow,key,producer,spark_logger):
+    possibleError=""
+    try:
+        publishKafka(producer,spark_logger,key,"INFO","Started processing process Id : "+prcRow['prcId'] + " with SQL query provided")
+        queryMap = {}
+        schemaMap = {}
+        srcMap = {}
+        destMap = {}
+        #joinCondition=" from {tab1} inner join {tab2} on {col1} = {col2}"
+        joinCondition="NA"
+        filterCondition= "NA"
+        # Fetch process Id specific mapping file
+        maps = pd.read_json(config.get('DIT_setup_config', 'prcMapping') + 'colMapping_' + prcRow['mapId'] + '.json')
+        mapTab = maps[maps['mapId'] == prcRow['mapId']]
+        srclst = []
+        deslst = []
+        for src in mapTab['srcId'].tolist():
+            srclst+=src
+        for dest in mapTab['destId'].tolist():
+            deslst+=dest
+        srcDestSet=set(itertools.product(srclst,deslst))
+        print(srcDestSet)
+        for row in srcDestSet:
+            print(row)
+            print(type(row))
+            srcDest = row[0] + ":" + row[1]
+            print(srcDest)
+            # Fetch source and destination column mapping files with respect to each source and column 
+            srcColMap = pd.read_json(config.get('DIT_setup_config', 'srcCols') + 'srcCols_' + row[0] + '.json')
+            destColMap = pd.read_json(config.get('DIT_setup_config', 'destCols') + 'destCols_' + row[1] + '.json')
+            # query.append(srcCol['colName'].str.cat()+" as "+destCol['colName'].str.cat())
+         
+
+            ## Fetch schema of the sources
+            if srcDest not in schemaMap:
+                fields = fetchSchema(srcColMap[srcColMap['srcId'] == row[0]],key,producer, spark_logger)
+                schema = StructType(fields)
+                schemaMap[srcDest] = schema
+                # Fetch source and destination details
+                src = pd.read_json(config.get('DIT_setup_config', 'srcDetails') + 'src_' + row[0] + '.json')
+                dest = pd.read_json(config.get('DIT_setup_config', 'destDetails') + 'dest_' + row[1] + '.json')
+                srcMap[srcDest] = src[src['srcId'] == row[0]]
+                destMap[srcDest] = dest[dest['destId'] == row[1]]
+                #Add Query
+                queryMap[srcDest] =  mapTab['query'] 
+        #Identify the process mapping     
+        mapping=findMapping(len(srclst),len(deslst),producer,spark_logger)
+        #Process data 
+        processData(sprkSession,mapping, srcMap, schemaMap, destMap, queryMap,joinCondition,filterCondition,key,producer, spark_logger)
+    except Exception as e:
+        publishKafka(producer,spark_logger,key,"ERROR","Exception occurred in executeQuery()")
+        publishKafka(producer,spark_logger,key,"ERROR"," The exception occurred for process ID :: " + prcRow['prcId'])
+        publishKafka(producer,spark_logger,key,"ERROR"," The possible errors can be "+possibleError)
+        publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
+        publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
+
                 
 def fetchSchema(srcCols,key, producer,spark_logger):
     try:
@@ -426,7 +490,7 @@ def processData(spark,mapping, srcMap, schemaMap, trgtMap, queryMap,joinConditio
     # TODO find alternative to any and restrict it to one row using tail head etc
     publishKafka(producer,spark_logger,key,"INFO","The process mapping of the current process is :: " +mapping)
     if mapping== "One_to_One" or mapping== "One_to_Many":
-        singleSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap,filterCondition,producer,key,producer, spark_logger)
+        singleSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap,filterCondition,key,producer, spark_logger)
     elif mapping == "Many_to_One"  :
         multiSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap,joinCondition,filterCondition,key,producer, spark_logger)
     elif mapping == "Many_to_Many" :
@@ -443,7 +507,11 @@ def processFiles(argTuple):
         for prcIdx, prcRow in prc[prc['isActive'] == "True"].iterrows():
             key=logKey(argTuple[1], prcRow['prcId'])
             spark_logger = logg.Log4j(argTuple[1],key)
-            prepareMeta(argTuple[1], prcRow,key,producer,spark_logger)
+            if prcRow.get('queryProvided') == "True" :
+                executeQuery(argTuple[1], prcRow,key,producer,spark_logger)                
+            else :
+                prepareMeta(argTuple[1], prcRow,key,producer,spark_logger)
+                    
     except Exception as e:
             print(str(datetime.datetime.now()) + "____________ Exception occurred in processFiles() ________________")
             print(str(datetime.datetime.now()) + " The exception occured for :: " + argTuple[0])

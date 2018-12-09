@@ -1,5 +1,5 @@
 [
 	{ "destId":"DestId_2","colName":"cat_id","colType":"Int","isNullable":"True","colPos":"1","colId":"1"},
-	{ "destId":"DestId_2","colName":"cat_dpt_id","colType":"Int","isNullable":"True","colPos":"2","colId":"2"},
+	{ "destId":"DestId_2","colName":"cat_dpt_id","colType":"String","isNullable":"True","colPos":"2","colId":"2"},
 	{ "destId":"DestId_2","colName":"cat_name","colType":"String","isNullable":"False","colPos":"3","colId":"3"}
 ]
