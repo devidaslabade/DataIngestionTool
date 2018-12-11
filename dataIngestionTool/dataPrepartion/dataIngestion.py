@@ -301,7 +301,8 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
                     publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " at "+dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
                                 "fileType"].any())
                     dfWrite.write.mode(dest["mode"].any()).format(dest["fileType"].any()).save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
-                                "fileType"].any())                    
+                                "fileType"].any())   
+                    dfWrite.show(truncate=False)                 
                     #spark.sql(query[0:-1]+joinCondition+filterCondition).show(truncate=False)
                 elif dest['fileType'].any() == "hivetable":
                     dfWrite.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
@@ -413,12 +414,9 @@ def executeQuery(sprkSession, prcRow,key,producer,spark_logger):
         for dest in mapTab['destId'].tolist():
             deslst+=dest
         srcDestSet=set(itertools.product(srclst,deslst))
-        print(srcDestSet)
+        #print(srcDestSet)
         for row in srcDestSet:
-            print(row)
-            print(type(row))
             srcDest = row[0] + ":" + row[1]
-            print(srcDest)
             # Fetch source and destination column mapping files with respect to each source and column 
             srcColMap = pd.read_json(config.get('DIT_setup_config', 'srcCols') + 'srcCols_' + row[0] + '.json')
             destColMap = pd.read_json(config.get('DIT_setup_config', 'destCols') + 'destCols_' + row[1] + '.json')

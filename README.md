@@ -60,7 +60,7 @@ The compression can be set in destination detail files by adding the json filed 
 Make sure that there is no col mapping and use follwing entry for destcols Json file \
  For setting default string literal :
  
-	Json element syntax : "default":"123"	
+	Json element syntax : "default":"'test_default_string'"	
 	
  For setting default SQL functions 	
 	
