@@ -117,3 +117,8 @@ dataIngestionTool/dataPrepartion/metastore_db/
 dataIngestionTool/dataPrepartion/spark-warehouse/
 dataIngestionTool/metastore_db
 test_dataIngestionTool/trgLoc/
+
+
+#Config Utility
+SpreadSheetUtility/.classpath
+SpreadSheetUtility/bin/

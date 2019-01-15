@@ -18,6 +18,7 @@ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
 import org.apache.poi.ss.usermodel.Sheet;
 
 import com.teradata.metadata.etl.utility.MetaDrivenApplicationConstants;
@@ -29,9 +30,9 @@ import net.sf.json.JSONObject;
  * @author ns250044
  *
  */
-public class DataIngestionEntrySample implements MetaDrivenApplicationConstants {
+public class ExcelToJsonUtility implements MetaDrivenApplicationConstants {
 	
-	private final static Logger LOGGER = Logger.getLogger(DataIngestionEntrySample.class);
+	private final static Logger LOGGER = Logger.getLogger(ExcelToJsonUtility.class);
 	
 	/**
 	 * Global HashMap object for storing all the field mappings between excel and json.
@@ -154,18 +155,20 @@ public class DataIngestionEntrySample implements MetaDrivenApplicationConstants 
                 for(int j = firstCellNum; j < lastCellNum; j++)
                 {
                     // Get current cell.
-                    Cell cell = row.getCell(j);
-
+                    Cell cell = row.getCell(j, MissingCellPolicy.CREATE_NULL_AS_BLANK);
+                    
                     // Get cell type.
                     int cellType = cell.getCellType();
 
                     if(cellType == CellType.NUMERIC.getCode())
                     {
-                        double numberValue = cell.getNumericCellValue();
+                        //double numberValue = cell.getNumericCellValue();
+                    	 int numberValue = (int)cell.getNumericCellValue();
 
                         // BigDecimal is used to avoid double value is counted use Scientific counting method.
                         // For example the original double variable value is 12345678, but jdk translated the value to 1.2345678E7.
-                        String stringCellValue = BigDecimal.valueOf(numberValue).toPlainString();
+                        //String stringCellValue = BigDecimal.valueOf(numberValue).toPlainString();
+                        String stringCellValue = String.valueOf(numberValue);
 
                         rowDataList.add(stringCellValue);
 
@@ -185,7 +188,7 @@ public class DataIngestionEntrySample implements MetaDrivenApplicationConstants 
                     {
                         rowDataList.add("");
                     }
-                }
+                }//end of for loop
 
                 // Add current row data list in the return list.
                 ret.add(rowDataList);
@@ -233,10 +236,15 @@ public class DataIngestionEntrySample implements MetaDrivenApplicationConstants 
                     {
                         String columnName = headerRow.get(j);
                         String fieldName = PROPERTY_MAP.get(columnName);
-                        
+                        if(j >= dataRow.size()) {
+                        	continue;
+                        }
                         String columnValue = dataRow.get(j);
-                        rowJsonObject.put(fieldName, columnValue);
-                        
+                        if(columnValue!=null) {
+                        	rowJsonObject.put(fieldName, columnValue);
+                        } else {
+                        	continue;
+                        }
                         if(j == 0) {
                         	fileNameSuffix = columnValue;
                         }
