@@ -10,7 +10,7 @@ import pandas as pd
 import datetime
 import traceback
 from kafka import KafkaProducer
-import logr as logg
+import custlogger as logg
 
 
 try:
