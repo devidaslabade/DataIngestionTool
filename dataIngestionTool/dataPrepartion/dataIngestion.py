@@ -10,7 +10,8 @@ import pandas as pd
 import datetime
 import traceback
 from kafka import KafkaProducer
-import custlogger as logg
+#sys.path.append('../')
+import dataPrepartion.custlogger as logg
 
 
 try:

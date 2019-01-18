@@ -2,6 +2,8 @@ import sys
 import importlib
 import argparse
 import time
+import datetime
+import traceback
 
 
 
@@ -21,7 +23,8 @@ if __name__ == '__main__':
         end = time.time()
         print ("\nExecution of job %s took %s seconds" % (args.job_name, end-start))
     except Exception as e:
-         print (str(datetime.datetime.now()) + "____________ Abruptly Exited________________")
-         raise Exception("Exception::Job %s failed with msg %s" %(args.job_name, str(e)))   
+        print (str(datetime.datetime.now()) + "____________ Abruptly Exited________________")
+        print(traceback.format_exc())
+        #raise Exception("Exception::Job %s failed with msg %s" %(args.job_name, str(e)))
             
 
