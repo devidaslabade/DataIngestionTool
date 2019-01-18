@@ -1,5 +1,20 @@
 # DataIngestionTool
 
+## Packaging steps (WIP)
+1. Install pandas \
+    pip install pandas
+2. Download requirement modules \
+	pip wheel -r requirements.txt -w dist
+3. Rename the wheel extension to zip \
+	mv findspark-1.3.0-py2.py3-none-any.whl findspark-1.3.0-py2.py3-none-any.zip \
+mv kafka-1.3.5-py2.py3-none-any.whl kafka-1.3.5-py2.py3-none-any.zip
+4. Build DIT package and convert it to zip \
+python setup.py bdist_wheel \
+mv dataIngestionTool-0.1-py3-none-any.whl dataIngestionTool-0.1-py3-none-any.zip
+ 
+
+
+
 ## Step to execute the Module
 
 
@@ -7,9 +22,17 @@ For help :
 python driver.py -h 
 
 
-For excuting jobs :
+For executing jobs in local mode :
 
 python driver.py --job=dataPrepartion.dataIngestion --configLoc=C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf --prcs="prc_PrcId_[0-9].json" --pool=3
+
+
+For executing jobs using Spark Submit :
+
+cd /home/harry/environment_withNumpy/DataIngestionTool/dataIngestionTool/dataPrepartion
+
+/home/harry/spark-2.3.1-bin-hadoop2.7/bin/spark-submit --py-files /home/harry/environment_withNumpy/DataIngestionTool/dist/findspark-1.3.0-py2.py3-none-any.zip,/home/harry/environment_withNumpy/DataIngestionTool/dist/kafka-1.3.5-py2.py3-none-any.zip,/home/harry/environment_withNumpy/DataIngestionTool/dist/dataIngestionTool-0.1-py3-none-any.zip driver.py --job=dataIngestion --configLoc=/home/harry/DataIngestionTool_dist/config/config.cnf --prcs="prc_PrcId_[0-9].json" --pool=3
+
 
 ### Supported Data Sources
 1. Delimited Text files (CSV, TAB etc )
