@@ -1,5 +1,7 @@
 [
-    { "mapId":"cm_3","destId":"DestId_3","destColId":"1","srcId":"SrcId_3","srcColId":"1"},
-    { "mapId":"cm_3","destId":"DestId_3","destColId":"2","srcId":"SrcId_3","srcColId":"2"},
-    { "mapId":"cm_3","destId":"DestId_3","destColId":"3","srcId":"SrcId_3","srcColId":"3"}
+    { "mapId":"cm_3",
+      "destId": ["DestId_3"],
+      "srcId":["SrcId_1","SrcId_2"],
+      "query":"select s1.category_department_id,count(s1.category_id) from SrcId_1 s1 left outer join SrcId_2 s2 on s1.category_department_id = s2.department_id group by s1.category_department_id"
+      }
 ]

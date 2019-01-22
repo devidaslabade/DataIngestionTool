@@ -2,29 +2,25 @@ import os
 import re
 import sys
 import json
-import glob
 import itertools
 from multiprocessing.dummy import Pool as ThreadPool
-from itertools import repeat
 import pandas as pd
 import datetime
 import traceback
 from kafka import KafkaProducer
-import dataPrepartion.custlogger as logg
-
+try:
+    import dataPrepartion.custlogger as logg
+except:
+    import custlogger as logg
 
 try:
     import pyspark
 except:
     import findspark
-
     findspark.init()
-    import pyspark
-#from pyspark.sql import DataFrame
+
 from pyspark.sql import SparkSession
 from pyspark.sql.types import *
-# from pyspark.sql.types import StructType, StructField
-# from pyspark.sql.types import DoubleType, IntegerType, StringType
 from configparser import ConfigParser
 
 # instantiate config Parser
@@ -53,7 +49,7 @@ def publishKafka(producer,spark_logger,prcKey,exception,msg):
             spark_logger.warn(msg)
         else :
             spark_logger.error(msg)     
-        jsonString = {"Exception": exception,"msg":msg}
+        jsonString = {"Timestamp":str(datetime.datetime.now()),"LogLevel": exception,"LogMsg":msg}
         producer.send(config.get('DIT_Kafka_config', 'TOPIC'), key=prcKey.encode('utf-8'), value=json.dumps(jsonString).encode('utf-8'))
     except Exception as e:
         print(str(datetime.datetime.now()) + "____________ Exception occurred in publishKafka() ________________")
@@ -535,18 +531,16 @@ def main(configPath, prcPattern,pool):
     print("List of process files to be processed are :: \n", prcList)
     spark = pyspark.sql.SparkSession.builder.appName("DataIngestion").enableHiveSupport().getOrCreate()
     
-    # lst = glob.glob(config.get('DIT_setup_config', 'prcDetails') + 'prc_PrcId_[0-9].json')
-    # sprkSession=spark.newSession()
-    threadPool.map(processFiles, zip(prcList, repeat(spark.newSession())))
+    threadPool.map(processFiles, zip(prcList, itertools.repeat(spark.newSession())))
     # spark.stop()
 
 
 
 
 
-if __name__ == "__main__":
-    prcs="prc_PrcId_[0-9].json"
-    pool=3
-    sys.exit(main('C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf', prcs,pool))
-    #sys.exit(main('C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\config\\config.cnf',prcs,pool))
+#if __name__ == "__main__":
+#    prcs="prc_PrcId_[0-9].json"
+#    pool=3
+#    sys.exit(main('C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf', prcs,pool))
+
 

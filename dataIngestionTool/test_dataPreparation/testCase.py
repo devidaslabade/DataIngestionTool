@@ -40,7 +40,7 @@ class SimpleTest(PySparkTest):
         prcs = "prc_PrcId_[0-9].json"
         pool = 3
         # module.main(args.config, args.prcs, args.pool)
-        module.main('C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\test_dataIngestionTool\\config\\config.cnf', prcs, pool)
+        module.main('C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\config\\config.cnf', prcs, pool)
 
     def testCsvToJson(self):
         schema = StructType([

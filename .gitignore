@@ -114,9 +114,12 @@ venv.bak/
 # DIT project ignore
 trgLoc/
 dataIngestionTool/dataPrepartion/metastore_db/
+dataIngestionTool/test_dataPreparation/metastore_db/
 dataIngestionTool/dataPrepartion/spark-warehouse/
 dataIngestionTool/metastore_db
-test_dataIngestionTool/trgLoc/
+dataIngestionTool/test_dataPreparation/TestFiles/TestCsvToCsv/destLoc/
+*/destLoc/
+
 
 
 #Config Utility
