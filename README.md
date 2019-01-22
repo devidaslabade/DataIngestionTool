@@ -7,10 +7,10 @@
 	pip wheel -r requirements.txt -w dist
 3. Rename the wheel extension to zip \
 	mv findspark-1.3.0-py2.py3-none-any.whl findspark-1.3.0-py2.py3-none-any.zip \
-mv kafka-1.3.5-py2.py3-none-any.whl kafka-1.3.5-py2.py3-none-any.zip
+	mv kafka-1.3.5-py2.py3-none-any.whl kafka-1.3.5-py2.py3-none-any.zip
 4. Build DIT package and convert it to zip \
 python setup.py bdist_wheel \
-mv dataIngestionTool-0.1-py3-none-any.whl dataIngestionTool-0.1-py3-none-any.zip
+	mv dataIngestionTool-0.1-py3-none-any.whl dataIngestionTool-0.1-py3-none-any.zip
  
 
 

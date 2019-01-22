@@ -19,6 +19,10 @@ except ImportError: # for pip <= 9.0.3
 PACKAGE_NAME = 'dataIngestionTool'
 VERSION = '0.1'
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
+
 reqs = parse_requirements('requirements.txt', session=False)
 requirements = [str(ir.req) for ir in reqs]
 
@@ -91,6 +95,12 @@ setup(
     version=VERSION,
 
     description='Data Ingestion Tool',
+    
+    long_description=long_description,
+    
+    long_description_content_type="text/markdown",
+    
+    url="https://github.com/pypa/sampleproject",
 
     classifiers=[
         'Development Status :: 4 - Beta',
@@ -101,6 +111,8 @@ setup(
     author='Sumit kumar Ankesh Jain',
 
     author_email='sumit.kumar@td.com;ankesh.jain@td.com',
+
+    
 
     packages=find_packages(include=['dataIngestionTool', 'dataIngestionTool.*'],
                            exclude=['*.test.*', '*.test']),
