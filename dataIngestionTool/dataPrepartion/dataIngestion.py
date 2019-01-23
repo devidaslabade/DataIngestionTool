@@ -32,9 +32,7 @@ def logKey(spark, prcId):
         current_date = str(datetime.datetime.now().strftime("%Y-%m-%d"))
         app_id = spark.sparkContext.getConf().get('spark.app.id')
         app_name = spark.sparkContext.getConf().get('spark.app.name')
-        #jsonString = {"prc_id": prcId ,"isException": isException,"msg":msg}
         logkey = str(prcId+"-"+app_name+"-"+app_id+"-"+current_date)
-        #producer.send('test', key=prcKey.encode('utf-8'), value=json.dumps(jsonString).encode('utf-8'))
         return logkey
     except Exception as e:
         print(str(datetime.datetime.now()) + "____________ Exception occurred in logKey() ________________")
@@ -42,14 +40,13 @@ def logKey(spark, prcId):
         print(traceback.format_exc())
 
 
-def publishKafka(producer,spark_logger,prcKey,exception,msg):
-    # spark = pyspark.sql.SparkSession.builder.appName("DataIngestion").enableHiveSupport().getOrCreate()
+def publishKafka(producer,spark_logger,prcKey,logLevel,msg):
     try:
-        if exception == "INFO" or exception == "WARN":
+        if logLevel == "INFO" or logLevel == "WARN":
             spark_logger.warn(msg)
         else :
             spark_logger.error(msg)     
-        jsonString = {"Timestamp":str(datetime.datetime.now()),"LogLevel": exception,"LogMsg":msg}
+        jsonString = {"Timestamp":str(datetime.datetime.now()),"LogLevel": logLevel,"LogMsg":msg}
         producer.send(config.get('DIT_Kafka_config', 'TOPIC'), key=prcKey.encode('utf-8'), value=json.dumps(jsonString).encode('utf-8'))
     except Exception as e:
         print(str(datetime.datetime.now()) + "____________ Exception occurred in publishKafka() ________________")
@@ -93,7 +90,6 @@ def prepareTPTScript(spark,srcMap, schemaMap, destMap, queryMap, spark_logger):
 
 
 def findMapping(uniqSrc,uniqDest,producer,spark_logger):
-    # spark = pyspark.sql.SparkSession.builder.appName("DataIngestion").enableHiveSupport().getOrCreate()
     try:
         if uniqSrc == 1 and uniqDest == 1:
             return "One_to_One"
@@ -518,12 +514,8 @@ def main(configPath, prcPattern,pool):
     config.read(configPath)
     # Read Process files and set thread pool
     prcList = list()
-    #regex = "r\'"+prcPattern+"\'".encode('string_escape')    
-    #regex = r'(colMapping_cm_(1|21|12)|prc_(PrcId_[0-9])).json'
-    #print(regex)
     for dir, root, files in os.walk(config.get('DIT_setup_config', 'prcDetails')):
         matches = re.finditer(r'{0}'.format(prcPattern), ' '.join(files), re.MULTILINE)
-        #matches = re.finditer(regex, ' '.join(files), re.MULTILINE)
         for matchNum, match in enumerate(matches):
             prcList.append(os.path.join(dir, match.group()))
     
