@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
-import pyspark
+try:
+    import pyspark
+except:
+    import findspark
+    findspark.init()    
 import unittest
 import warnings
 import importlib
@@ -31,6 +35,11 @@ class Test(unittest.TestCase):
         delete_dest_dir()
         #TestFiles\\TestCsvToCsv\\destLoc\\
         execute_valid_process()
+        try:
+            import pyspark
+        except:
+            import findspark
+            findspark.init()
         cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Csv_To_Csv").enableHiveSupport().getOrCreate()
   
     
