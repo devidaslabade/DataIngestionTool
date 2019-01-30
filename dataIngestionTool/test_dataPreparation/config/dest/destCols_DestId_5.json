@@ -1,5 +1,10 @@
 [
-	{ "destId":"DestId_5","colName":"cat_id","colType":"Int","isNullable":"True","colPos":"1","colId":"1"},
-	{ "destId":"DestId_5","colName":"cat_dpt_id","colType":"Int","isNullable":"True","colPos":"2","colId":"2"},
-	{ "destId":"DestId_5","colName":"cat_name","colType":"String","isNullable":"False","colPos":"3","colId":"3"}
+	{ "destId":"DestId_5","colName":"employeeName","colType":"String","isNullable":"True","colPos":"1","colId":"1"},
+	{ "destId":"DestId_5","colName":"job","colType":"String","isNullable":"True","colPos":"2","colId":"2"},
+	{ "destId":"DestId_5","colName":"salary","colType":"Int","isNullable":"False","colPos":"3","colId":"3"},
+	{ "destId":"DestId_5","colName":"deptName","colType":"String","isNullable":"False","colPos":"4","colId":"4"},
+	{ "destId":"DestId_5","colName":"location","colType":"String","isNullable":"False","colPos":"5","colId":"5"},
+	{ "destId":"DestId_5","colName":"joiningDate","colType":"String","isNullable":"False","colPos":"6","colId":"6"},
+	{ "destId":"DestId_5","colName":"createdDate","colType":"String","isNullable":"False","colPos":"7","colId":"7","default":"from_unixtime(unix_timestamp(), 'yyyy-MM-dd HH:mm:ss.SSS')"},
+	{ "destId":"DestId_5","colName":"createdBy","colType":"String","isNullable":"False","colPos":"8","colId":"8","default":"'Data Ingestion Tool'"}
 ]

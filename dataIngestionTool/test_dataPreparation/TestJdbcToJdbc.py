@@ -8,7 +8,6 @@ import unittest
 import sqlite3
 import warnings
 import importlib
-import shutil
 from configparser import ConfigParser
 import os
 import sys
@@ -22,7 +21,7 @@ def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print(module)
         os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR')
-        prcs = "prc_PrcId_[4-5].json"
+        prcs = "prc_PrcId_[4-6].json"
         pool = 3
         module.main('config\\config.cnf', prcs, pool)
         
@@ -37,13 +36,13 @@ def create_test_db():
     cursor = conn.cursor()
     # create a table
     cursor.execute("""CREATE TABLE employee (empId text,empName text,job text,manager text,hiredate text,salary text,comm text,deptno text)""")
-    cursor.execute("""CREATE TABLE dept (deptno text,dname text,loc text)""")
+    cursor.execute("""CREATE TABLE department (deptno text,dname text,loc text)""")
     # insert some data
-    cursor.execute("INSERT INTO dept VALUES ('10', 'ACCOUNTING', 'NEW YORK')")
-    cursor.execute("INSERT INTO dept VALUES ('20', 'RESEARCH', 'BOSTON')")
-    cursor.execute("INSERT INTO dept VALUES ('30', 'SALES', 'CHICAGO')")
-    cursor.execute("INSERT INTO dept VALUES ('40', 'OPERATIONS', 'BOSTON')")
-    cursor.execute("INSERT INTO dept VALUES ('50', 'ADMIN', 'CHICAGO')")
+    cursor.execute("INSERT INTO department VALUES ('10', 'ACCOUNTING', 'NEW YORK')")
+    cursor.execute("INSERT INTO department VALUES ('20', 'RESEARCH', 'BOSTON')")
+    cursor.execute("INSERT INTO department VALUES ('30', 'SALES', 'CHICAGO')")
+    cursor.execute("INSERT INTO department VALUES ('40', 'OPERATIONS', 'BOSTON')")
+    cursor.execute("INSERT INTO department VALUES ('50', 'ADMIN', 'CHICAGO')")
     # save data to database
     conn.commit()
     # insert multiple records using the more secure "?" method
@@ -82,7 +81,7 @@ class Test(unittest.TestCase):
         except:
             import findspark
             findspark.init()
-        cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Csv_To_Csv").enableHiveSupport().getOrCreate()
+        cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Jdbc_To_Jdbc").enableHiveSupport().getOrCreate()
   
     
     def setUp(self):
@@ -107,12 +106,11 @@ class Test(unittest.TestCase):
     '''
    
     def test_PrcId_4(self):
-        print("Validating test result of PrcId_1")
+        print("Validating test result of PrcId_4")
         cursor = self.conn.cursor()     
-        resultSet=cursor.execute("select * from employee").fetchall()
+        resultSet=cursor.execute("select job from Dest_4 where deptName='ACCOUNTING' and salary=5000").fetchall()
         cursor.close()
-        print(resultSet)
-
+        self.assertEqual("PRESIDENT", resultSet[0][0])
 
 
 
@@ -121,8 +119,7 @@ class Test(unittest.TestCase):
     '''
     @unittest.skip("demonstrating skipping")      
     def test_PrcId_5(self):
-        print("Validating test result of PrcId_2")
-        
+        print("Validating test result of PrcId_5")        
         isValid=False
         destDir="TestFiles\\TestCsvToCsv\\destLoc\\DestId_2_json\\json\\"
         observedDF = self.spark.read.json(destDir)
