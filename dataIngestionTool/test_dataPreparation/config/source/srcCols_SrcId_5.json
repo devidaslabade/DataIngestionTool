@@ -1,5 +1,5 @@
 [
- 	{ "srcId":"SrcId_5","colName":"category_id","colType":"Int","isNullable":"True","colPos":"1","colId":"1"},
-	{ "srcId":"SrcId_5","colName":"category_department_id","colType":"Int","isNullable":"True","colPos":"2","colId":"2"},
-	{ "srcId":"SrcId_5","colName":"category_name","colType":"String","isNullable":"False","colPos":"3","colId":"3"}
+ 	{ "srcId":"SrcId_5","colName":"deptno","colType":"String","isNullable":"True","colPos":"1","colId":"1"},
+	{ "srcId":"SrcId_5","colName":"dname","colType":"String","isNullable":"True","colPos":"2","colId":"2"},
+	{ "srcId":"SrcId_5","colName":"loc","colType":"String","isNullable":"False","colPos":"3","colId":"3"}
 ]

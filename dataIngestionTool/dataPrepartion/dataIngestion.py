@@ -191,19 +191,25 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,key,
                     compression="none"
                 else :
                     compression=dest.get('compression').str.cat() 
-                    
+                 #Fetch value of numPartitions
+                if dest.get('numPartitions') is None :
+                    numPartitions=8
+                else :
+                    numPartitions=dest.get('numPartitions')[0].item()  
                     
                 if dest['fileType'].any() == "csv" or dest['fileType'].any() == "json" or dest[
                     'fileType'].any() == "orc" or dest['fileType'].any() == "parquet":
-                    spark.sql("select "+','.join(queryMap[destKey])+" from "+destKey.split(":")[0]+filterCondition).write.mode(dest["mode"].any()).format(dest["fileType"].any()).option("compression",compression).save(
-                        dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
-                            "fileType"].any())
+                    spark.sql("select "+','.join(queryMap[destKey])+" from "+destKey.split(":")[0]+filterCondition).coalesce(numPartitions)\
+                    .write.mode(dest["mode"].any()).format(dest["fileType"].any()).option("compression",compression)\
+                    .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest["fileType"].any())
                     spark.sql("select "+','.join(queryMap[destKey])+" from "+destKey.split(":")[0]+filterCondition).show(truncate=False)
                     #df.selectExpr(queryMap[destKey]).show(truncate=False)
                 elif dest['fileType'].any() == "hivetable":
-                    df.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
+                    spark.sql("select "+','.join(queryMap[destKey])+" from "+destKey.split(":")[0]+filterCondition)\
+                        .write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
                 elif dest['fileType'].any() == "jdbcclient":
-                    df.write.format("jdbc").mode(dest["mode"].any()).option("numPartitions", 8)\
+                    spark.sql("select "+','.join(queryMap[destKey])+" from "+destKey.split(":")[0]+filterCondition)\
+                        .coalesce(numPartitions).write.format("jdbc").mode(dest["mode"].any())\
                         .option("url", dest["url"].any()).option("driver", dest["driver"].any())\
                         .option("dbtable",dest["table"].any()).option("user",dest["user"].any())\
                         .option("password", dest["password"].any()).save()
@@ -286,20 +292,32 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
         if destKey.split(":")[1] not in distinctDest :
             distinctDest.append(destKey.split(":")[1])
             publishKafka(producer,spark_logger,key,"INFO","Publishing the records for Dest Id :: "+destKey.split(":")[1])
+            #Fetch value of compression
+            if dest.get('compression') is None :
+                compression="none"
+            else :
+                compression=dest.get('compression').str.cat() 
+            #Fetch value of numPartitions
+            if dest.get('numPartitions') is None :                 
+                numPartitions=8
+            else :
+                numPartitions=dest.get('numPartitions')[0].item()
+                 
             try:
                 publishKafka(producer,spark_logger,key,"INFO",":::::Executing Query::::::"+queryExpr)
                 dfWrite=spark.sql(queryExpr)                
                 if dest['fileType'].any() == "csv" or dest['fileType'].any() == "json" or dest['fileType'].any() == "orc" or dest['fileType'].any() == "parquet":
                     publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " at "+dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
                                 "fileType"].any())
-                    dfWrite.write.mode(dest["mode"].any()).format(dest["fileType"].any()).save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
-                                "fileType"].any())   
+                    dfWrite.coalesce(numPartitions).write.mode(dest["mode"].any()).format(dest["fileType"].any())\
+                    .option("compression",compression)\
+                    .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest["fileType"].any())   
                     dfWrite.show(truncate=False)                 
                     #spark.sql(query[0:-1]+joinCondition+filterCondition).show(truncate=False)
                 elif dest['fileType'].any() == "hivetable":
                     dfWrite.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
                 elif dest['fileType'].any() == "jdbcclient":
-                    dfWrite.write.format("jdbc").mode(dest["mode"].any()).option("numPartitions", 8)\
+                    dfWrite.coalesce(numPartitions).write.format("jdbc").mode(dest["mode"].any())\
                         .option("url", dest["url"].any()).option("driver", dest["driver"].any())\
                         .option("dbtable",dest["table"].any()).option("user",dest["user"].any())\
                         .option("password", dest["password"].any()).save()
