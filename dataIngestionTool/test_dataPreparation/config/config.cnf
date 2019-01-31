@@ -18,5 +18,6 @@ LOG_DIR=C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\test_d
 
 
 [DIT_TEST_CASE_config]
-DB_LOC=TestFiles//TestJdbcToJdbc//test.db
-SPARK_CONF_DIR=TestFiles\\TestJdbcToJdbc\\conf
+DB_LOC = TestFiles//TestJdbcToJdbc//test.db
+SPARK_CONF_DIR_JDBC = TestFiles\\TestJdbcToJdbc\\conf
+SPARK_CONF_DIR_HIVE = TestFiles\\TestHiveToHive\\conf

@@ -20,7 +20,7 @@ config.read('config\\config.cnf')
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print(module)
-        os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_JDBC')
+        os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR')
         prcs = "prc_PrcId_[4-6].json"
         pool = 3
         module.main('config\\config.cnf', prcs, pool)
@@ -73,15 +73,25 @@ class Test(unittest.TestCase):
     def setUpClass(cls):
         warnings.simplefilter('ignore', category=ImportWarning)
         warnings.simplefilter('ignore', category=DeprecationWarning)
-        cls.conn=create_test_db()
-        #TestFiles\\TestCsvToCsv\\destLoc\\
-        execute_valid_process()
+        #cls.conn=create_test_db()
+        #TestFiles\\TestCsvToCsv\\destLoc\\  
+        #execute_valid_process()
+        os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_HIVE')
         try:
             import pyspark
         except:
             import findspark
             findspark.init()
-        cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Jdbc_To_Jdbc").enableHiveSupport().getOrCreate()
+        cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Hive_To_Hive")\
+                    .enableHiveSupport().getOrCreate()
+        data = [('First', 1), ('Second', 2), ('Third', 3), ('Fourth', 4), ('Fifth', 5)]
+        df = cls.spark.createDataFrame(data)
+ 
+        # Write into Hive
+        df.write.saveAsTable('example')
+
+        
+        
   
     
     def setUp(self):
@@ -107,10 +117,9 @@ class Test(unittest.TestCase):
    
     def test_PrcId_4(self):
         print("Validating test result of PrcId_4")
-        cursor = self.conn.cursor()     
-        resultSet=cursor.execute("select job from Dest_4 where deptName='ACCOUNTING' and salary=5000").fetchall()
-        cursor.close()
-        self.assertEqual("PRESIDENT", resultSet[0][0])
+        # Read from Hive
+        df_load = self.spark.sql('SELECT * FROM example')
+        df_load.show()
 
 
 
