@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
-try:
-    import pyspark
-except:
-    import findspark
-    findspark.init()    
+import sys
+sys.path.append('../')
 import unittest
 import sqlite3
 import warnings
 import importlib
 from configparser import ConfigParser
 import os
-import sys
-sys.path.append('../')
+import shutil
+
+try:
+    import pyspark
+except:
+    import findspark
+    findspark.init()
+from pyspark.sql.types import *   
 
 # instantiate config Parser
 config = ConfigParser()
@@ -21,32 +24,39 @@ def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print(module)
         os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR')
-        prcs = "prc_PrcId_[4-6].json"
+        prcs = "prc_PrcId_[7-9].json"
         pool = 3
         module.main('config\\config.cnf', prcs, pool)
         
-def create_test_db():
+def create_test_db(sparkS):
     
     """
     Setup a temporary database
     """
-    if os.path.isfile(config.get('DIT_TEST_CASE_config', 'DB_LOC')):
-        os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC'))
-    conn = sqlite3.connect(config.get('DIT_TEST_CASE_config', 'DB_LOC'))
-    cursor = conn.cursor()
-    # create a table
-    cursor.execute("""CREATE TABLE employee (empId text,empName text,job text,manager text,hiredate text,salary text,comm text,deptno text)""")
-    cursor.execute("""CREATE TABLE department (deptno text,dname text,loc text)""")
-    # insert some data
-    cursor.execute("INSERT INTO department VALUES ('10', 'ACCOUNTING', 'NEW YORK')")
-    cursor.execute("INSERT INTO department VALUES ('20', 'RESEARCH', 'BOSTON')")
-    cursor.execute("INSERT INTO department VALUES ('30', 'SALES', 'CHICAGO')")
-    cursor.execute("INSERT INTO department VALUES ('40', 'OPERATIONS', 'BOSTON')")
-    cursor.execute("INSERT INTO department VALUES ('50', 'ADMIN', 'CHICAGO')")
-    # save data to database
-    conn.commit()
-    # insert multiple records using the more secure "?" method
-    empDetails = [('7839','KING','PRESIDENT','null','17-11-1981','5000','null','10'),
+          
+    deptSchema = StructType([StructField("deptno", StringType(), True),
+                             StructField("dname", StringType(), True),
+                             StructField("loc", StringType(), True)])
+    deptData = [('10', 'ACCOUNTING', 'NEW YORK'),
+                ('20', 'RESEARCH', 'BOSTON'),
+                ('30', 'SALES', 'CHICAGO'),
+                ('40', 'OPERATIONS', 'BOSTON'),
+                ('50', 'ADMIN', 'CHICAGO')]
+    # create a department table
+    deptDF = sparkS.createDataFrame(deptData,deptSchema)
+    deptDF.write.saveAsTable('department')
+
+    # create a employee table
+    empSchema = StructType([StructField("empId", StringType(), True),
+                            StructField("empName", StringType(), True),
+                            StructField("job", StringType(), True),
+                            StructField("manager", StringType(), True),
+                            StructField("hiredate", StringType(), True),
+                            StructField("salary", StringType(), True),
+                            StructField("comm", StringType(), True),
+                            StructField("deptno", StringType(), True)]) 
+
+    empData = [('7839','KING','PRESIDENT','null','17-11-1981','5000','null','10'),
             ('7698','BLAKE','MANAGER','7839','1-5-1981','2850','null','30'),
             ('7782','CLARK','MANAGER','7839','9-6-1981','2450','null','10'),
             ('7566','JONES','MANAGER','7839','2-4-1981','2975','null','20'),
@@ -60,12 +70,11 @@ def create_test_db():
             ('7876','ADAMS','CLERK','7788','13-7-1987','1100','null','20'),
             ('7900','JAMES','CLERK','7698','3-12-1981','950','null','30'),
             ('7934','MILLER','CLERK','7782','23-1-1982','1300','null','10')]
-    cursor.executemany("INSERT INTO employee VALUES (?,?,?,?,?,?,?,?)", empDetails)
 
-    conn.commit()
+    # create a department table
+    empDF = sparkS.createDataFrame(empData,empSchema)
+    empDF.write.saveAsTable('employee')
 
-    #shutil.rmtree('TestFiles\\TestCsvToCsv\\destLoc\\', ignore_errors=True)
-    return conn
 
 class Test(unittest.TestCase):
 
@@ -73,26 +82,20 @@ class Test(unittest.TestCase):
     def setUpClass(cls):
         warnings.simplefilter('ignore', category=ImportWarning)
         warnings.simplefilter('ignore', category=DeprecationWarning)
-        #cls.conn=create_test_db()
-        #TestFiles\\TestCsvToCsv\\destLoc\\  
-        #execute_valid_process()
+        if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_WAREHOUSE')):
+            shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_WAREHOUSE'), ignore_errors=True)
+        if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_DERBY')):
+            shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_DERBY'), ignore_errors=True)  
+
         os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_HIVE')
-        try:
-            import pyspark
-        except:
-            import findspark
-            findspark.init()
+
         cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Hive_To_Hive")\
                     .enableHiveSupport().getOrCreate()
-        data = [('First', 1), ('Second', 2), ('Third', 3), ('Fourth', 4), ('Fifth', 5)]
-        df = cls.spark.createDataFrame(data)
+        create_test_db(cls.spark)   
+        
+        #TestFiles\\TestCsvToCsv\\destLoc\\  
+        #execute_valid_process()
  
-        # Write into Hive
-        df.write.saveAsTable('example')
-
-        
-        
-  
     
     def setUp(self):
         print("setup")
@@ -106,19 +109,19 @@ class Test(unittest.TestCase):
         """
         Delete the database
         """
-        cls.conn.close()
+        #cls.conn.close()
         #os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC'))
-        #cls.spark.stop()
+        cls.spark.stop()
         print("tearDownClass")      
 
     '''
     Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
     '''
    
-    def test_PrcId_4(self):
+    def test_PrcId_7(self):
         print("Validating test result of PrcId_4")
         # Read from Hive
-        df_load = self.spark.sql('SELECT * FROM example')
+        df_load = self.spark.sql('SELECT * FROM employee')
         df_load.show()
 
 
@@ -127,7 +130,7 @@ class Test(unittest.TestCase):
     Read from a file, filter the data, transform data of one of the columns using SQL function, save the output in compressed file format
     '''
     @unittest.skip("demonstrating skipping")      
-    def test_PrcId_5(self):
+    def test_PrcId_8(self):
         print("Validating test result of PrcId_5")        
         isValid=False
         destDir="TestFiles\\TestCsvToCsv\\destLoc\\DestId_2_json\\json\\"
@@ -146,7 +149,7 @@ class Test(unittest.TestCase):
     Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
     '''
     @unittest.skip("demonstrating skipping")  
-    def test_PrcId_6(self):
+    def test_PrcId_9(self):
         print("Validating test result of PrcId_3")
         observedDF = self.spark.read.json("TestFiles\\TestCsvToCsv\\destLoc\\DestId_3_json\\json\\")
         obsCount=observedDF.show()

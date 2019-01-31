@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
-try:
-    import pyspark
-except:
-    import findspark
-    findspark.init()    
+import sys
+sys.path.append('../') 
+import os
 import unittest
 import warnings
 import importlib
 import shutil
 from configparser import ConfigParser
-import os
-import sys
-sys.path.append('../')
 
+try:
+    import pyspark
+except:
+    import findspark
+    findspark.init()   
 # instantiate config Parser
 config = ConfigParser()
 
@@ -35,11 +35,7 @@ class Test(unittest.TestCase):
         delete_dest_dir()
         #TestFiles\\TestCsvToCsv\\destLoc\\
         execute_valid_process()
-        try:
-            import pyspark
-        except:
-            import findspark
-            findspark.init()
+
         cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Csv_To_Csv").enableHiveSupport().getOrCreate()
   
     

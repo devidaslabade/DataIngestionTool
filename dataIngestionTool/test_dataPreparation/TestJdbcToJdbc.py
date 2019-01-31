@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
-try:
-    import pyspark
-except:
-    import findspark
-    findspark.init()    
+import sys
+sys.path.append('../') 
+import os
 import unittest
 import sqlite3
 import warnings
 import importlib
 from configparser import ConfigParser
-import os
-import sys
-sys.path.append('../')
+
+try:
+    import pyspark
+except:
+    import findspark
+    findspark.init()   
 
 # instantiate config Parser
 config = ConfigParser()
@@ -30,9 +31,9 @@ def create_test_db():
     """
     Setup a temporary database
     """
-    if os.path.isfile(config.get('DIT_TEST_CASE_config', 'DB_LOC')):
-        os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC'))
-    conn = sqlite3.connect(config.get('DIT_TEST_CASE_config', 'DB_LOC'))
+    if os.path.isfile(config.get('DIT_TEST_CASE_config', 'DB_LOC_JDBC')):
+        os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC_JDBC'))
+    conn = sqlite3.connect(config.get('DIT_TEST_CASE_config', 'DB_LOC_JDBC'))
     cursor = conn.cursor()
     # create a table
     cursor.execute("""CREATE TABLE employee (empId text,empName text,job text,manager text,hiredate text,salary text,comm text,deptno text)""")
@@ -76,11 +77,7 @@ class Test(unittest.TestCase):
         cls.conn=create_test_db()
         #TestFiles\\TestCsvToCsv\\destLoc\\
         execute_valid_process()
-        try:
-            import pyspark
-        except:
-            import findspark
-            findspark.init()
+
         cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Jdbc_To_Jdbc").enableHiveSupport().getOrCreate()
   
     
@@ -97,8 +94,8 @@ class Test(unittest.TestCase):
         Delete the database
         """
         cls.conn.close()
-        #os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC'))
-        #cls.spark.stop()
+        #os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC_JDBC'))
+        cls.spark.stop()
         print("tearDownClass")      
 
     '''
