@@ -23,8 +23,7 @@ config.read('config\\config.cnf')
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print(module)
-        os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR')
-        prcs = "prc_PrcId_[7-9].json"
+        prcs = "prc_PrcId_[7-7].json"
         pool = 3
         module.main('config\\config.cnf', prcs, pool)
         
@@ -45,7 +44,12 @@ def create_test_db(sparkS):
     # create a department table
     deptDF = sparkS.createDataFrame(deptData,deptSchema)
     deptDF.write.saveAsTable('department')
-
+    '''
+    fldNames=[]
+    for strctFld in deptSchema:
+            print(strctFld.jsonValue()['name'])
+            fldNames.append(strctFld.jsonValue()['name'])
+    print(','.join(fldNames))   ''' 
     # create a employee table
     empSchema = StructType([StructField("empId", StringType(), True),
                             StructField("empName", StringType(), True),
@@ -88,13 +92,12 @@ class Test(unittest.TestCase):
             shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_DERBY'), ignore_errors=True)  
 
         os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_HIVE')
-
         cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Hive_To_Hive")\
                     .enableHiveSupport().getOrCreate()
         create_test_db(cls.spark)   
         
         #TestFiles\\TestCsvToCsv\\destLoc\\  
-        #execute_valid_process()
+        execute_valid_process()
  
     
     def setUp(self):
@@ -119,9 +122,9 @@ class Test(unittest.TestCase):
     '''
    
     def test_PrcId_7(self):
-        print("Validating test result of PrcId_4")
+        print("Validating test result of PrcId_7")
         # Read from Hive
-        df_load = self.spark.sql('SELECT * FROM employee')
+        df_load = self.spark.sql('SELECT * FROM fin_table')
         df_load.show()
 
 

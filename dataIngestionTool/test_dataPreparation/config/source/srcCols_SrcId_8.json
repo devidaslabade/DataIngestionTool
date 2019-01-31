@@ -1,5 +1,10 @@
 [
- 	{ "srcId":"SrcId_8","colName":"category_id","colType":"Int","isNullable":"True","colPos":"1","colId":"1"},
-	{ "srcId":"SrcId_8","colName":"category_department_id","colType":"Int","isNullable":"True","colPos":"2","colId":"2"},
-	{ "srcId":"SrcId_8","colName":"category_name","colType":"String","isNullable":"False","colPos":"3","colId":"3"}
+ 	{ "srcId":"SrcId_8","colName":"empId","colType":"String","isNullable":"True","colPos":"1","colId":"1"},
+	{ "srcId":"SrcId_8","colName":"empName","colType":"String","isNullable":"True","colPos":"2","colId":"2"},
+	{ "srcId":"SrcId_8","colName":"job","colType":"String","isNullable":"False","colPos":"3","colId":"3"},
+	{ "srcId":"SrcId_8","colName":"manager","colType":"String","isNullable":"False","colPos":"4","colId":"4"},
+	{ "srcId":"SrcId_8","colName":"hiredate","colType":"String","isNullable":"False","colPos":"5","colId":"5"},
+	{ "srcId":"SrcId_8","colName":"salary","colType":"String","isNullable":"False","colPos":"6","colId":"6"},
+	{ "srcId":"SrcId_8","colName":"comm","colType":"String","isNullable":"False","colPos":"7","colId":"7"},
+	{ "srcId":"SrcId_8","colName":"deptno","colType":"String","isNullable":"False","colPos":"8","colId":"8"}
 ]

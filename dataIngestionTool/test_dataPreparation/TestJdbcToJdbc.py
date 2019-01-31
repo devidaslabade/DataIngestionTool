@@ -64,8 +64,6 @@ def create_test_db():
     cursor.executemany("INSERT INTO employee VALUES (?,?,?,?,?,?,?,?)", empDetails)
 
     conn.commit()
-
-    #shutil.rmtree('TestFiles\\TestCsvToCsv\\destLoc\\', ignore_errors=True)
     return conn
 
 class Test(unittest.TestCase):

@@ -1,3 +1,3 @@
 [
-  {"destId":"DestId_7","destType":"local","destLocation":"C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\trgLoc","fileType":"json" ,"mode":"overwrite"}
+{"destId":"DestId_7","destType":"local","destLocation":"C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\srcLoc\\","fileType":"hivetable","table":"fin_table","header":"true","mode":"overwrite" }
 ]
