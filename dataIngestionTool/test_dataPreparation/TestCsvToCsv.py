@@ -15,6 +15,7 @@ except:
     findspark.init()   
 # instantiate config Parser
 config = ConfigParser()
+config.read('config\\config.cnf')
 
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
@@ -32,6 +33,7 @@ class Test(unittest.TestCase):
     def setUpClass(cls):
         warnings.simplefilter('ignore', category=ImportWarning)
         warnings.simplefilter('ignore', category=DeprecationWarning)
+        os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_CSV')
         delete_dest_dir()
         #TestFiles\\TestCsvToCsv\\destLoc\\
         execute_valid_process()

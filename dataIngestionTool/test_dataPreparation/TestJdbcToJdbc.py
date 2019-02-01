@@ -20,8 +20,7 @@ config.read('config\\config.cnf')
 
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
-        print(module)
-        os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_JDBC')
+        print(module)        
         prcs = "prc_PrcId_[4-6].json"
         pool = 3
         module.main('config\\config.cnf', prcs, pool)
@@ -72,6 +71,7 @@ class Test(unittest.TestCase):
     def setUpClass(cls):
         warnings.simplefilter('ignore', category=ImportWarning)
         warnings.simplefilter('ignore', category=DeprecationWarning)
+        os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_JDBC')
         cls.conn=create_test_db()
         #TestFiles\\TestCsvToCsv\\destLoc\\
         execute_valid_process()

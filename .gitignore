@@ -118,7 +118,9 @@ dataIngestionTool/test_dataPreparation/metastore_db/
 dataIngestionTool/dataPrepartion/spark-warehouse/
 dataIngestionTool/metastore_db
 dataIngestionTool/test_dataPreparation/TestFiles/TestCsvToCsv/destLoc/
+dataIngestionTool/test_dataPreparation/TestFiles/TestCsvToCsv/derby/
 dataIngestionTool/test_dataPreparation/TestFiles/TestJdbcToJdbc/destLoc/
+dataIngestionTool/test_dataPreparation/TestFiles/TestJdbcToJdbc/derby/
 dataIngestionTool/test_dataPreparation/TestFiles/TestHiveToHive/derby/
 dataIngestionTool/test_dataPreparation/TestFiles/TestHiveToHive/warehouse/
 */destLoc/
