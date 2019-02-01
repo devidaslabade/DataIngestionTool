@@ -1,3 +1,6 @@
 [
-	{ "destId":"DestId_8","colName":"cat_name","colType":"String","isNullable":"False","colPos":"3","colId":"3"}
+	{ "destId":"DestId_8","colName":"employeeName","colType":"String","isNullable":"False","colPos":"1","colId":"1"},
+	{ "destId":"DestId_8","colName":"salary","colType":"String","isNullable":"False","colPos":"2","colId":"2"},
+	{ "destId":"DestId_8","colName":"departmentNo","colType":"String","isNullable":"False","colPos":"3","colId":"3"},
+	{ "destId":"DestId_8","colName":"hireDate","colType":"String","isNullable":"False","colPos":"4","colId":"4","transFunc":"from_unixtime(unix_timestamp({0}, 'dd-MM-yyyy'))"}
 ]

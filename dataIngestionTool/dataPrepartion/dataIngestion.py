@@ -165,7 +165,14 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,key,
 
             elif src['fileType'].any() == "hivetable":
                 print("Inside hivetable")
-                colName = ','.join(schemaMap[srcKey].fieldNames())
+                ##TODO fieldNames() will be available in verions 2.3.0 onwards ( https://jira.apache.org/jira/browse/SPARK-20090)
+                #colName = ','.join(schemaMap[srcKey].fieldNames())
+                #Using alternate approach to fieldNames() until then
+                fldNames=[]
+                for strctFld in schemaMap[srcKey]:
+                    fldNames.append(strctFld.jsonValue()['name'])
+                colName = ','.join(fldNames)    
+                ## Comment the above line till fldNames and uncomment the previous approach in future releases.
                 df = spark.sql('SELECT ' + colName + ' FROM ' + src["table"].any())
                 print("read from table" + src["table"].any())
             elif src['fileType'].any() == "jdbcclient":

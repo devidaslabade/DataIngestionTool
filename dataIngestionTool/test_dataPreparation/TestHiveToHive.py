@@ -23,7 +23,7 @@ config.read('config\\config.cnf')
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print(module)
-        prcs = "prc_PrcId_[7-7].json"
+        prcs = "prc_PrcId_[7-9].json"
         pool = 3
         module.main('config\\config.cnf', prcs, pool)
         
@@ -120,46 +120,42 @@ class Test(unittest.TestCase):
     '''
     Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
     '''
-   
+
     def test_PrcId_7(self):
         print("Validating test result of PrcId_7")
         # Read from Hive
-        df_load = self.spark.sql('SELECT * FROM fin_table')
-        df_load.show()
+        df_load = self.spark.sql('select job from fin_tab_dest7 where deptName="ACCOUNTING" and salary=5000')
+        retVal=df_load.collect()
+        #print(retVal[0].job)
+        self.assertEqual("PRESIDENT", retVal[0]['job'])
 
 
 
     '''
     Read from a file, filter the data, transform data of one of the columns using SQL function, save the output in compressed file format
     '''
-    @unittest.skip("demonstrating skipping")      
+
     def test_PrcId_8(self):
-        print("Validating test result of PrcId_5")        
-        isValid=False
-        destDir="TestFiles\\TestCsvToCsv\\destLoc\\DestId_2_json\\json\\"
-        observedDF = self.spark.read.json(destDir)
-        obsCount=observedDF.count()
-        print("The count of records at destination location is :: "+str(obsCount))
-        for file in os.listdir(destDir):
-            if file.endswith(".bz2") and obsCount== 1:
-                print("The file is bzip compressed :: "+file)                
-                isValid=True
-        self.assertTrue(isValid)
+        print("Validating test result of PrcId_8")        
+        # Read from Hive
+        df_load = self.spark.sql('select salary from fin_tab_dest8 where departmentNo=20 and employeeName="JONES"')
+        #df_load.show()
+        retVal=df_load.collect()
+        self.assertEqual('2975', retVal[0]['salary'])
 
 
 
     '''
     Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
     '''
-    @unittest.skip("demonstrating skipping")  
+    
     def test_PrcId_9(self):
-        print("Validating test result of PrcId_3")
-        observedDF = self.spark.read.json("TestFiles\\TestCsvToCsv\\destLoc\\DestId_3_json\\json\\")
-        obsCount=observedDF.show()
-        filteredCount=observedDF.filter("category_department_id = 8 and cnt_cat = 10 ").count()
-        #print("The count of records at destination location is :: "+str(obsCount))
-        print("The count of filtered records is :: "+str(filteredCount))
-        self.assertEqual(1, filteredCount)
+        print("Validating test result of PrcId_9")
+        # Read from Hive
+        df_load = self.spark.sql('select empCount from fin_tab_dest9 where loc="CHICAGO"')
+        #df_load.show()
+        retVal=df_load.collect()
+        self.assertEqual(6, retVal[0]['empCount'])
 
 
 
@@ -179,4 +175,4 @@ class Test(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(warnings='ignore')

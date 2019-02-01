@@ -1,5 +1,7 @@
 [
-    { "mapId":"cm_9","destId":"DestId_9","destColId":"1","srcId":"SrcId_8","srcColId":"3"},
-    { "mapId":"cm_9","destId":"DestId_9","destColId":"2","srcId":"SrcId_9","srcColId":"2"}
-
+    { "mapId":"cm_9",
+      "destId": ["DestId_9"],
+      "srcId":["SrcId_7","SrcId_8"],
+      "query":"select s7.loc, count(empId) as empCount from SrcId_8 s8 left outer join SrcId_7 s7 on s8.deptno = s7.deptno group by s7.loc"
+      }
 ]

@@ -1,3 +1,3 @@
 [
-{"prcId" : "PrcId_8", "prcName":"TestDump_8","isActive":"rue","mapId":"cm_8" }
+{"prcId" : "PrcId_8", "prcName":"TestDump_8","isActive":"True","mapId":"cm_8" ,"filterCondition":"SrcId_8:8@='20'" }
 ]
