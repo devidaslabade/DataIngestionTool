@@ -99,7 +99,7 @@ class Test(unittest.TestCase):
     '''
     Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
     '''
-   
+
     def test_PrcId_4(self):
         print("Validating test result of PrcId_4")
         cursor = self.conn.cursor()     
@@ -112,34 +112,28 @@ class Test(unittest.TestCase):
     '''
     Read from a file, filter the data, transform data of one of the columns using SQL function, save the output in compressed file format
     '''
-    @unittest.skip("demonstrating skipping")      
+          
     def test_PrcId_5(self):
         print("Validating test result of PrcId_5")        
-        isValid=False
-        destDir="TestFiles\\TestCsvToCsv\\destLoc\\DestId_2_json\\json\\"
-        observedDF = self.spark.read.json(destDir)
-        obsCount=observedDF.count()
-        print("The count of records at destination location is :: "+str(obsCount))
-        for file in os.listdir(destDir):
-            if file.endswith(".bz2") and obsCount== 1:
-                print("The file is bzip compressed :: "+file)                
-                isValid=True
-        self.assertTrue(isValid)
+        cursor = self.conn.cursor()     
+        resultSet=cursor.execute('select salary from Dest_5 where departmentNo=20 and employeeName="ADAMS"').fetchall()        
+        cursor.close()
+        print(resultSet)
+        self.assertEqual('1100', resultSet[0][0])
 
 
 
     '''
     Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
     '''
-    @unittest.skip("demonstrating skipping")  
+ 
     def test_PrcId_6(self):
-        print("Validating test result of PrcId_3")
-        observedDF = self.spark.read.json("TestFiles\\TestCsvToCsv\\destLoc\\DestId_3_json\\json\\")
-        obsCount=observedDF.show()
-        filteredCount=observedDF.filter("category_department_id = 8 and cnt_cat = 10 ").count()
-        #print("The count of records at destination location is :: "+str(obsCount))
-        print("The count of filtered records is :: "+str(filteredCount))
-        self.assertEqual(1, filteredCount)
+        print("Validating test result of PrcId_6")
+        cursor = self.conn.cursor()     
+        resultSet=cursor.execute('select empCount from Dest_6 where loc="BOSTON"').fetchall()        
+        cursor.close()
+        print(resultSet)
+        self.assertEqual(5, resultSet[0][0])
 
 
 

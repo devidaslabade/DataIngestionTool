@@ -1,10 +1,6 @@
 [
     { "mapId":"cm_5","destId":"DestId_5","destColId":"1","srcId":"SrcId_4","srcColId":"2"},
-    { "mapId":"cm_5","destId":"DestId_5","destColId":"2","srcId":"SrcId_4","srcColId":"3"},
-    { "mapId":"cm_5","destId":"DestId_5","destColId":"3","srcId":"SrcId_4","srcColId":"6"},
-    { "mapId":"cm_5","destId":"DestId_5","destColId":"4","srcId":"SrcId_5","srcColId":"2"},
-    { "mapId":"cm_5","destId":"DestId_5","destColId":"5","srcId":"SrcId_5","srcColId":"3"},
-    { "mapId":"cm_5","destId":"DestId_5","destColId":"6","srcId":"SrcId_4","srcColId":"5"},
-    { "mapId":"cm_5","destId":"DestId_5","destColId":"7","srcId":"SrcId_4","srcColId":"-1"},
-    { "mapId":"cm_5","destId":"DestId_5","destColId":"8","srcId":"SrcId_4","srcColId":"-1"}
+    { "mapId":"cm_5","destId":"DestId_5","destColId":"2","srcId":"SrcId_4","srcColId":"6"},
+    { "mapId":"cm_5","destId":"DestId_5","destColId":"3","srcId":"SrcId_4","srcColId":"8"},
+    { "mapId":"cm_5","destId":"DestId_5","destColId":"4","srcId":"SrcId_4","srcColId":"5"}
 ]

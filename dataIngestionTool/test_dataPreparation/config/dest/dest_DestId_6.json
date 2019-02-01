@@ -1,3 +1,3 @@
 [
-   {"destId":"DestId_6","destType":"mysql","destLocation":"C:\\Users\\aj250046\\Documents\\DIT2\\DataIngestionTool\\trgLoc\\","fileType":"jdbcclient" ,"table":"category_1","mode":"overwrite","url":"jdbc:mysql://localhost/spark","driver" :"com.mysql.jdbc.Driver", "user": "root","password":""}
+   {"destId":"DestId_6","destType":"sqlLite","destLocation":"TestFiles\\TestJdbcToJdbc\\destLoc\\","fileType":"jdbcclient" ,"table":"dest_6","mode":"overwrite","url":"jdbc:sqlite:C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\dataIngestionTool\\test_dataPreparation\\TestFiles\\TestJdbcToJdbc\\test.db","driver" :"org.sqlite.JDBC", "user": "root","password":"","numPartitions":"1"}
 ]
