@@ -166,7 +166,7 @@ class Test(unittest.TestCase):
         
         
     #@unittest.skip("demonstrating skipping")    
-    def test_12(self):
+    def test_PrcId_12(self):
         print("Validating test result of PrcId_12")
         conn = sqlite3.connect(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE'))
         cursor = conn.cursor()
@@ -181,7 +181,7 @@ class Test(unittest.TestCase):
           
 
     #@unittest.skip("demonstrating skipping")    
-    def test_13(self):
+    def test_PrcId_13(self):
         print("Validating test result of PrcId_13")
         observedDF = self.spark.read.json("TestFiles\\TestHiveToHive\\destLoc\\DestId_13_json\\json\\")
         #obsCount=observedDF.show()

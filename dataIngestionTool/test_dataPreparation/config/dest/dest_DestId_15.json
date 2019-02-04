@@ -1,0 +1,3 @@
+[
+  {"destId":"DestId_15","destType":"local","destLocation":"TestFiles\\TestJdbcToJdbc\\destLoc\\","fileType":"orc","compression":"snappy" ,"mode":"overwrite"}
+]

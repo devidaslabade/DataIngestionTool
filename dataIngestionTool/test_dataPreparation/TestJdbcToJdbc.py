@@ -21,7 +21,7 @@ config.read('config\\config.cnf')
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print(module)        
-        prcs = "prc_PrcId_[4-6].json"
+        prcs = "(prc_PrcId_4.json|prc_PrcId_5.json|prc_PrcId_6.json|prc_PrcId_14.json|prc_PrcId_15.json)"
         pool = 3
         module.main('config\\config.cnf', prcs, pool)
         
@@ -74,9 +74,10 @@ class Test(unittest.TestCase):
         os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_JDBC')
         cls.conn=create_test_db()
         #TestFiles\\TestCsvToCsv\\destLoc\\
+        cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Jdbc_To_Jdbc").enableHiveSupport().getOrCreate()
         execute_valid_process()
 
-        cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Jdbc_To_Jdbc").enableHiveSupport().getOrCreate()
+        
   
     
     def setUp(self):
@@ -99,7 +100,7 @@ class Test(unittest.TestCase):
     '''
     Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
     '''
-
+    #@unittest.skip("demonstrating skipping")
     def test_PrcId_4(self):
         print("Validating test result of PrcId_4")
         cursor = self.conn.cursor()     
@@ -112,7 +113,7 @@ class Test(unittest.TestCase):
     '''
     Read from a file, filter the data, transform data of one of the columns using SQL function, save the output in compressed file format
     '''
-          
+    #@unittest.skip("demonstrating skipping")     
     def test_PrcId_5(self):
         print("Validating test result of PrcId_5")        
         cursor = self.conn.cursor()     
@@ -126,7 +127,7 @@ class Test(unittest.TestCase):
     '''
     Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
     '''
- 
+    #@unittest.skip("demonstrating skipping")
     def test_PrcId_6(self):
         print("Validating test result of PrcId_6")
         cursor = self.conn.cursor()     
@@ -139,12 +140,25 @@ class Test(unittest.TestCase):
 
         
         
-    @unittest.skip("demonstrating skipping")    
-    def test_02(self):
-        self.assertFalse(False)
+    #@unittest.skip("demonstrating skipping")    
+    def test_PrcId_14(self):
+        print("Validating test result of PrcId_14")
+        # Read from Hive
+        df_load = self.spark.sql('select employeeName from fin_tab_dest14 where deptName = "ACCOUNTING" and job = "CLERK"')
+        #df_load.show()
+        retVal=df_load.collect()
+        #print(retVal[0].job)
+        self.assertEqual("MILLER", retVal[0]['employeeName'])
      
-        
-          
+    #@unittest.skip("demonstrating skipping")         
+    def test_PrcId_15(self):
+        print("Validating test result of PrcId_15")
+        observedDF = self.spark.read.orc("TestFiles\\TestJdbcToJdbc\\destLoc\\DestId_15_orc\\orc\\")
+        #obsCount=observedDF.show()
+        filteredData=observedDF.filter('deptName = "ACCOUNTING" and job = "MANAGER"').select("employeeName").collect()
+        #print("The count of records at destination location is :: "+str(obsCount))
+        #print("The count of filtered records is :: "+str(filteredCount))
+        self.assertEqual('CLARK', filteredData[0]['employeeName'])          
 
 
 
