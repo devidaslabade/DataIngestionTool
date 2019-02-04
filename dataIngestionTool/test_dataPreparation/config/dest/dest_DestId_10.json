@@ -1,0 +1,3 @@
+[
+  {"destId":"DestId_10","destType":"local","destLocation":"TestFiles\\TestCsvToCsv\\destLoc\\","fileType":"hivetable","table":"fin_tab_dest10" ,"mode":"overwrite"}
+]

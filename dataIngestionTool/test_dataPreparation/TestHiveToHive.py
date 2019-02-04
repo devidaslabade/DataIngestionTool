@@ -23,7 +23,7 @@ config.read('config\\config.cnf')
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print(module)
-        prcs = "prc_PrcId_[7-9].json"
+        prcs = "(prc_PrcId_7.json|prc_PrcId_8.json|prc_PrcId_9.json|prc_PrcId_12.json|prc_PrcId_13.json)"
         pool = 3
         module.main('config\\config.cnf', prcs, pool)
         
@@ -88,8 +88,12 @@ class Test(unittest.TestCase):
         warnings.simplefilter('ignore', category=DeprecationWarning)
         if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_WAREHOUSE')):
             shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_WAREHOUSE'), ignore_errors=True)
+        
         if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_DERBY')):
             shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_DERBY'), ignore_errors=True)  
+        
+        if os.path.isfile(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE')):
+            os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE'))    
 
         os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_HIVE')
         cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Hive_To_Hive")\
@@ -120,7 +124,7 @@ class Test(unittest.TestCase):
     '''
     Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
     '''
-
+    #@unittest.skip("demonstrating skipping") 
     def test_PrcId_7(self):
         print("Validating test result of PrcId_7")
         # Read from Hive
@@ -134,7 +138,7 @@ class Test(unittest.TestCase):
     '''
     Read from a file, filter the data, transform data of one of the columns using SQL function, save the output in compressed file format
     '''
-
+    #@unittest.skip("demonstrating skipping") 
     def test_PrcId_8(self):
         print("Validating test result of PrcId_8")        
         # Read from Hive
@@ -148,7 +152,7 @@ class Test(unittest.TestCase):
     '''
     Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
     '''
-    
+    #@unittest.skip("demonstrating skipping")     
     def test_PrcId_9(self):
         print("Validating test result of PrcId_9")
         # Read from Hive
@@ -161,14 +165,30 @@ class Test(unittest.TestCase):
 
         
         
-    @unittest.skip("demonstrating skipping")    
-    def test_02(self):
-        self.assertFalse(False)
+    #@unittest.skip("demonstrating skipping")    
+    def test_12(self):
+        print("Validating test result of PrcId_12")
+        conn = sqlite3.connect(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE'))
+        cursor = conn.cursor()
+        # Read from JDBC Source
+        resultSet=cursor.execute('select employeeName from Dest_12 where deptName = "ACCOUNTING" and job = "MANAGER"').fetchall()        
+        cursor.close()
+        conn.close()
+        #print(resultSet)
+        self.assertEqual('CLARK', resultSet[0][0])
      
         
           
 
-
+    #@unittest.skip("demonstrating skipping")    
+    def test_13(self):
+        print("Validating test result of PrcId_13")
+        observedDF = self.spark.read.json("TestFiles\\TestHiveToHive\\destLoc\\DestId_13_json\\json\\")
+        #obsCount=observedDF.show()
+        filteredData=observedDF.filter('deptName = "ACCOUNTING" and job = "MANAGER"').select("employeeName").collect()
+        #print("The count of records at destination location is :: "+str(obsCount))
+        #print("The count of filtered records is :: "+str(filteredCount))
+        self.assertEqual('CLARK', filteredData[0]['employeeName'])
 
 
 

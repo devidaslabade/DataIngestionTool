@@ -1,0 +1,7 @@
+[
+	{ "destId":"DestId_11","colName":"cat_id","colType":"Int","isNullable":"True","colPos":"1","colId":"1"},
+	{ "destId":"DestId_11","colName":"cat_dpt_id","colType":"String","isNullable":"True","colPos":"2","colId":"2","transFunc":"concat({0} ,'_X_Y_Z')"},
+	{ "destId":"DestId_11","colName":"cat_name","colType":"String","isNullable":"False","colPos":"3","colId":"3","transFunc":"NA"},
+	{ "destId":"DestId_11","colName":"created_date","colType":"String","isNullable":"False","colPos":"4","colId":"4","default":"from_unixtime(unix_timestamp(), 'yy-MM-dd hh:mm:ssZ')"},
+	{ "destId":"DestId_11","colName":"dept_name","colType":"String","isNullable":"False","colPos":"5","colId":"5"}
+]

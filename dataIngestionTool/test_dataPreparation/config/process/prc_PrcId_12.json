@@ -1,0 +1,3 @@
+[
+{"prcId" : "PrcId_12", "prcName":"TestDump_12","isActive":"True","mapId":"cm_12","joinCol":"SrcId_8:8=SrcId_7:1" ,"filterCondition":"SrcId_8:8@='10'" }
+]

@@ -3,6 +3,7 @@ import sys
 sys.path.append('../') 
 import os
 import unittest
+import sqlite3
 import warnings
 import importlib
 import shutil
@@ -20,12 +21,14 @@ config.read('config\\config.cnf')
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print(module)
-        prcs = "prc_PrcId_[1-3].json"
+        prcs = "(prc_PrcId_1.json|prc_PrcId_2.json|prc_PrcId_3.json|prc_PrcId_10.json|prc_PrcId_11.json)"
         pool = 3
         module.main('config\\config.cnf', prcs, pool)
         
 def delete_dest_dir():
     shutil.rmtree('TestFiles\\TestCsvToCsv\\destLoc\\', ignore_errors=True)
+    if os.path.isfile(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV')):
+        os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV'))
 
 class Test(unittest.TestCase):
 
@@ -56,6 +59,7 @@ class Test(unittest.TestCase):
     '''
     Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
     '''
+    #@unittest.skip("demonstrating skipping")    
     def test_PrcId_1(self):
         print("Validating test result of PrcId_1")
         observedDF = self.spark.read.json("TestFiles\\TestCsvToCsv\\destLoc\\DestId_1_json\\json\\")
@@ -71,6 +75,7 @@ class Test(unittest.TestCase):
     '''
     Read from a file, filter the data, transform data of one of the columns using SQL function, save the output in compressed file format
     '''
+    #@unittest.skip("demonstrating skipping")   
     def test_PrcId_2(self):
         print("Validating test result of PrcId_2")
         isValid=False
@@ -89,7 +94,7 @@ class Test(unittest.TestCase):
     '''
     Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
     '''
-
+    #@unittest.skip("demonstrating skipping")
     def test_PrcId_3(self):
         print("Validating test result of PrcId_3")
         observedDF = self.spark.read.json("TestFiles\\TestCsvToCsv\\destLoc\\DestId_3_json\\json\\")
@@ -103,14 +108,29 @@ class Test(unittest.TestCase):
 
         
         
-    @unittest.skip("demonstrating skipping")    
-    def test_02(self):
-        self.assertFalse(False)
+    #@unittest.skip("demonstrating skipping")    
+    def test_PrcId_10(self):
+        print("Validating test result of PrcId_10")
+        # Read from Hive
+        df_load = self.spark.sql('select cat_name from fin_tab_dest10 where dept_name="Fitness" and cat_id=7')
+        df_load.show()
+        retVal=df_load.collect()
+        #print(retVal[0].job)
+        self.assertEqual("Hockey", retVal[0]['cat_name'])
      
         
           
-
-
+    #@unittest.skip("demonstrating skipping") 
+    def test_PrcId_11(self):
+        print("Validating test result of PrcId_11")
+        conn = sqlite3.connect(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV'))
+        cursor = conn.cursor()
+        # Read from JDBC Source
+        resultSet=cursor.execute('select cat_name from Dest_11 where dept_name="Fitness" and cat_id=2').fetchall()        
+        cursor.close()
+        conn.close()
+        print(resultSet)
+        self.assertEqual('Soccer', resultSet[0][0])
 
 
 
