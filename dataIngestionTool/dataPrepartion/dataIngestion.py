@@ -150,21 +150,21 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,key,
         try:
             publishKafka(producer,spark_logger,key,"INFO","The processing singleSrcPrc() process for " + srcKey)
             if  src['fileType'].any() == "json" or src['fileType'].any() == "parquet" or src['fileType'].any() == "orc":
+                publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
                 df = spark.read.format(src['fileType'].any()).schema(schemaMap[srcKey]).load(src['srcLocation'].any())
                 #.option("inferSchema", src.get('inferSchema').str.cat().lower()) Not required
             elif src['fileType'].any() == "csv" or src['fileType'].any() == "delimited":
+                publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
                 if src.get('delimiter') is None :
                     delimiter=","
                 else :
                     delimiter=src.get('delimiter').str.cat()    
                 if src.get('inferSchema') is None or src.get('inferSchema').str.cat().lower() == "false" :
                     df = spark.read.format("csv").schema(schemaMap[srcKey]).option("header", src['header'].any()).option("delimiter", delimiter).load(src['srcLocation'].any())
-             
                 else:
                     df = spark.read.format("csv").option("header", src['header'].any()).option("delimiter", delimiter).option("inferSchema", src.get('inferSchema').str.cat().lower()).load(src['srcLocation'].any())
-
             elif src['fileType'].any() == "hivetable":
-                print("Inside hivetable")
+                publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from table "+src["table"].any())
                 ##TODO fieldNames() will be available in verions 2.3.0 onwards ( https://jira.apache.org/jira/browse/SPARK-20090)
                 #colName = ','.join(schemaMap[srcKey].fieldNames())
                 #Using alternate approach to fieldNames() until then
@@ -176,12 +176,17 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,key,
                 df = spark.sql('SELECT ' + colName + ' FROM ' + src["table"].any())
                 print("read from table" + src["table"].any())
             elif src['fileType'].any() == "jdbcclient":
-                print("Inside jdbcclient")
-                print(src["table"].any())
+                publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from table "+src["table"].any())
                 df = spark.read.format("jdbc").option("url", src["url"].any()).option("driver",src["driver"].any()).option("dbtable", src["table"].any()).option("user", src["user"].any()).option("password", src["password"].any()).load()
-            df.show()
-            df.printSchema()  
+            #df.show()
+            #df.printSchema()  
             df.createOrReplaceTempView(srcKey.split(":")[0])
+            #Publishing statistics of source data set
+            srcSummary=df.describe().toJSON().collect()
+            srcJsons=[]
+            for dfele in srcSummary:
+                srcJsons.append(json.loads(dfele))
+            publishKafka(producer,spark_logger,key,"INFO","The summary of source "+srcKey.split(":")[0]+" is : " + json.dumps(srcJsons))
         except Exception as e:
             publishKafka(producer,spark_logger,key,"ERROR","Exception occurred in singleSrcPrc()")
             publishKafka(producer,spark_logger,key,"ERROR"," The iteration key for srcMap is :: " + srcKey)
@@ -190,8 +195,8 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,key,
 
             
         for destKey, dest in destMap.items():
-            print(queryMap[destKey])
-            print(','.join(queryMap[destKey]))
+            #print(queryMap[destKey])
+            #print(','.join(queryMap[destKey]))
             try:
                 #Fetch value of compression
                 if dest.get('compression') is None :
@@ -203,43 +208,37 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,key,
                     numPartitions=8
                 else :
                     numPartitions=dest.get('numPartitions')[0].item()  
+                
+                dfWrite=spark.sql("select "+','.join(queryMap[destKey])+" from "+destKey.split(":")[0]+filterCondition)    
                     
                 if dest['fileType'].any() == "csv" or dest['fileType'].any() == "json" or dest[
                     'fileType'].any() == "orc" or dest['fileType'].any() == "parquet":
-                    spark.sql("select "+','.join(queryMap[destKey])+" from "+destKey.split(":")[0]+filterCondition).coalesce(numPartitions)\
-                    .write.mode(dest["mode"].any()).format(dest["fileType"].any()).option("compression",compression)\
+                    publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " at "+dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
+                                "fileType"].any())
+                    dfWrite.coalesce(numPartitions).write.mode(dest["mode"].any()).format(dest["fileType"].any())\
+                    .option("compression",compression)\
                     .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest["fileType"].any())
-                    spark.sql("select "+','.join(queryMap[destKey])+" from "+destKey.split(":")[0]+filterCondition).show(truncate=False)
+                    #spark.sql("select "+','.join(queryMap[destKey])+" from "+destKey.split(":")[0]+filterCondition).show(truncate=False)
                     #df.selectExpr(queryMap[destKey]).show(truncate=False)
                 elif dest['fileType'].any() == "hivetable":
                     publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " having table name : "+dest["table"].any())
-                    spark.sql("select "+','.join(queryMap[destKey])+" from "+destKey.split(":")[0]+filterCondition)\
-                        .write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
+                    dfWrite.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
                 elif dest['fileType'].any() == "jdbcclient":
                     publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " having table name : "+dest["table"].any())
-                    spark.sql("select "+','.join(queryMap[destKey])+" from "+destKey.split(":")[0]+filterCondition)\
-                        .coalesce(numPartitions).write.format("jdbc").mode(dest["mode"].any())\
+                    dfWrite.coalesce(numPartitions).write.format("jdbc").mode(dest["mode"].any())\
                         .option("url", dest["url"].any()).option("driver", dest["driver"].any())\
                         .option("dbtable",dest["table"].any()).option("user",dest["user"].any())\
                         .option("password", dest["password"].any()).save()
-                    print("Data inserted successfully for---------- " + destKey )
                 elif dest['fileType'].any() == "DataBase":
                     print("TEST107c::")
                     prepareTPTScript(spark,srcMap, schemaMap, destMap, queryMap, producer,spark_logger)
 
-
-                print("------------Start of Destination Statistics----------")
-                destStat = df.selectExpr(queryMap[destKey]).describe()
-                destStat.show()
-                destStat.createOrReplaceTempView("dest")
-                print("--------------End of Destination Statistics----------")
-
-                print("------------Start of Comaparison Statistics----------")
-                spark.sql("select s.summary,s.category_id, d.cat_id,(s.category_id - d.cat_id) AS Category_diff,s.category_department_id,d.cat_dpt_id,(s.category_department_id - d.cat_dpt_id) AS diff_Category_department,s.category_name,d.cat_name,(s.category_name = d.cat_name) AS diff_Category_Name from source s join dest d on s.summary  = d.summary").show()
-                spark.sql("select CAST(s.category_name AS int),CAST(d.cat_name AS INT) from source s join dest d on s.summary  = d.summary").show()
-                print("------------End of Comaparison Statistics----------")
-
-
+                #Publishing statistics of destination data set
+                destSummary=dfWrite.describe().toJSON().collect()
+                destJsons=[]
+                for dfele in destSummary:
+                    destJsons.append(json.loads(dfele))
+                publishKafka(producer,spark_logger,key,"INFO","The summary of destination data set "+destKey.split(":")[1]+" is : " + json.dumps(destJsons))
             except Exception as e:
                 publishKafka(producer,spark_logger,key,"ERROR","Exception occurred in singleSrcPrc()")
                 publishKafka(producer,spark_logger,key,"ERROR"," The iteration key for target Map is :: " + destKey)
@@ -252,21 +251,21 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
         publishKafka(producer,spark_logger,key,"INFO","In multiSrcPrc() method processing for Src Id " + srcKey)
         try:
             if  src['fileType'].any() == "json" or src['fileType'].any() == "parquet" or src['fileType'].any() == "orc":
+                publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
                 df = spark.read.format(src['fileType'].any()).schema(schemaMap[srcKey]).load(src['srcLocation'].any())
                 #.option("inferSchema", src.get('inferSchema').str.cat().lower()) Not required
             elif src['fileType'].any() == "csv" or src['fileType'].any() == "delimited":
+                publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
                 if src.get('delimiter') is None :
                     delimiter=","
                 else :
                     delimiter=src.get('delimiter').str.cat()    
                 if src.get('inferSchema') is None or src.get('inferSchema').str.cat().lower() == "false" :
                     df = spark.read.format("csv").schema(schemaMap[srcKey]).option("header", src['header'].any()).option("delimiter", delimiter).load(src['srcLocation'].any())
-             
                 else:
                     df = spark.read.format("csv").option("header", src['header'].any()).option("delimiter", delimiter).option("inferSchema", src.get('inferSchema').str.cat().lower()).load(src['srcLocation'].any())
-
             elif src['fileType'].any() == "hivetable":
-                print("Inside hivetable")
+                publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from table "+src["table"].any())
                 ##TODO fieldNames() will be available in verions 2.3.0 onwards ( https://jira.apache.org/jira/browse/SPARK-20090)
                 #colName = ','.join(schemaMap[srcKey].fieldNames())
                 #Using alternate approach to fieldNames() until then
@@ -276,10 +275,8 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
                 colName = ','.join(fldNames)    
                 ## Comment the above line till fldNames and uncomment the previous approach in future releases.
                 df = spark.sql('SELECT ' + colName + ' FROM ' + src["table"].any())
-                print("read from table" + src["table"].any())
             elif src['fileType'].any() == "jdbcclient":
-                print("Inside jdbcclient")
-                print(src["table"].any())
+                publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from table "+src["table"].any())
                 df = spark.read.format("jdbc").option("url", src["url"].any()).option("driver",src["driver"].any()).option("dbtable", src["table"].any()).option("user", src["user"].any()).option("password", src["password"].any()).load()
             df.show()
             df.printSchema()  
