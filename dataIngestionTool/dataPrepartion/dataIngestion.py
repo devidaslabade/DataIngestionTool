@@ -228,16 +228,16 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,key,
                     prepareTPTScript(spark,srcMap, schemaMap, destMap, queryMap, producer,spark_logger)
 
 
-                #print("------------Start of Destination Statistics----------")
-                #destStat = df.selectExpr(queryMap[destKey]).describe()
-                #destStat.show()
-                #destStat.createOrReplaceTempView("dest")
-                #print("--------------End of Destination Statistics----------")
+                print("------------Start of Destination Statistics----------")
+                destStat = df.selectExpr(queryMap[destKey]).describe()
+                destStat.show()
+                destStat.createOrReplaceTempView("dest")
+                print("--------------End of Destination Statistics----------")
 
-                #print("------------Start of Comaparison Statistics----------")
-                #spark.sql("select s.summary,s.category_id, d.cat_id,(s.category_id - d.cat_id) AS Category_diff,s.category_department_id,d.cat_dpt_id,(s.category_department_id - d.cat_dpt_id) AS diff_Category_department,s.category_name,d.cat_name,(s.category_name = d.cat_name) AS diff_Category_Name from source s join dest d on s.summary  = d.summary").show()
-                #spark.sql("select CAST(s.category_name AS int),CAST(d.cat_name AS INT) from source s join dest d on s.summary  = d.summary").show()
-                #print("------------End of Comaparison Statistics----------")
+                print("------------Start of Comaparison Statistics----------")
+                spark.sql("select s.summary,s.category_id, d.cat_id,(s.category_id - d.cat_id) AS Category_diff,s.category_department_id,d.cat_dpt_id,(s.category_department_id - d.cat_dpt_id) AS diff_Category_department,s.category_name,d.cat_name,(s.category_name = d.cat_name) AS diff_Category_Name from source s join dest d on s.summary  = d.summary").show()
+                spark.sql("select CAST(s.category_name AS int),CAST(d.cat_name AS INT) from source s join dest d on s.summary  = d.summary").show()
+                print("------------End of Comaparison Statistics----------")
 
 
             except Exception as e:
