@@ -1,4 +1,0 @@
-[
-	{ "srcId":"SrcId_2","colName":"department_id","colType":"Int","isNullable":"True","colPos":"1","colId":"1"},
-	{ "srcId":"SrcId_2","colName":"department_name","colType":"String","isNullable":"False","colPos":"2","colId":"2"}
-]

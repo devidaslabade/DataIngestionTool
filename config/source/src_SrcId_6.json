@@ -1,3 +1,0 @@
-[
-{"srcId":"SrcId_6","srcType":"mysql","srcLocation":"C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\srcLoc\\","fileType":"jdbcclient","table":"category","header":"true","url":"jdbc:mysql://localhost/spark","driver" :"com.mysql.jdbc.Driver","user": "root","password":""}
-]

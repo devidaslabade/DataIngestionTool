@@ -1,3 +1,0 @@
-[
-{"prcId" : "PrcId_1", "prcName":"TestDump_1","isActive":"rue","mapId":"cm_1","joinCol":"SrcId_1:2=SrcId_2:1" ,"filterCondition":"SrcId_2:2@='Fitness'"}
-]
