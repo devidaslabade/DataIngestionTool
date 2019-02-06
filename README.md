@@ -1,12 +1,13 @@
 # DataIngestionTool
 
 ## Packaging steps (WIP)
+Check if pip exists, if it is not installed then follow the instruction at  https://pip.pypa.io/en/stable/installing/
 
-Install pip https://pip.pypa.io/en/stable/installing/
+Now follow following steps :
 
-1. Install pandas \
+1. Install pandas on all nodes \
     pip install pandas
-2. Download requirement modules \
+2. Download modules mentioned in requirement \
 	pip wheel -r requirements.txt -w dist
 3. Rename the wheel extension to zip \
 	mv findspark-1.3.0-py2.py3-none-any.whl findspark-1.3.0-py2.py3-none-any.zip \
@@ -34,7 +35,7 @@ For executing jobs using Spark Submit :
 
 cd /home/harry/environment_withNumpy/DataIngestionTool/dataIngestionTool/dataPrepartion
 
-/home/harry/spark-2.3.1-bin-hadoop2.7/bin/spark-submit --py-files /home/harry/environment_withNumpy/DataIngestionTool/dist/findspark-1.3.0-py2.py3-none-any.zip,/home/harry/environment_withNumpy/DataIngestionTool/dist/kafka-1.3.5-py2.py3-none-any.zip,/home/harry/environment_withNumpy/DataIngestionTool/dist/dataIngestionTool-0.1-py3-none-any.zip driver.py --job=dataIngestion --configLoc=/home/harry/DataIngestionTool_dist/config/config.cnf --prcs="prc_PrcId_[0-9].json" --pool=3
+$spark-submit --py-files /home/harry/environment_withNumpy/DataIngestionTool/dist/findspark-1.3.0-py2.py3-none-any.zip,/home/harry/environment_withNumpy/DataIngestionTool/dist/kafka-1.3.5-py2.py3-none-any.zip,/home/harry/environment_withNumpy/DataIngestionTool/dist/dataIngestionTool-0.1-py3-none-any.zip driver.py --job=dataIngestion --configLoc=/home/harry/DataIngestionTool_dist/config/config.cnf --prcs="prc_PrcId_[0-9].json" --pool=3
 
 
 ### Supported Data Sources
