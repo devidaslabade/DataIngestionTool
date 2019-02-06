@@ -1,3 +1,3 @@
 [
-  {"destId":"DestId_14","destType":"local","destLocation":"TestFiles\\TestJdbcToJdbc\\destLoc\\","fileType":"hivetable","table":"fin_tab_dest14" ,"mode":"overwrite"}
+  {"destId":"DestId_14","destType":"local","destLocation":"TestFiles/TestJdbcToJdbc/destLoc/","fileType":"hivetable","table":"fin_tab_dest14" ,"mode":"overwrite"}
 ]

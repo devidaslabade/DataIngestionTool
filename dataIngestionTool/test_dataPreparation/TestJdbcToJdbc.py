@@ -16,14 +16,14 @@ except:
 
 # instantiate config Parser
 config = ConfigParser()
-config.read('config\\config.cnf')
+config.read('config/config.cnf')
 
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print(module)        
         prcs = "(prc_PrcId_4.json|prc_PrcId_5.json|prc_PrcId_6.json|prc_PrcId_14.json|prc_PrcId_15.json)"
         pool = 3
-        module.main('config\\config.cnf', prcs, pool)
+        module.main('config/config.cnf', prcs, pool)
         
 def create_test_db():
     
@@ -73,7 +73,7 @@ class Test(unittest.TestCase):
         warnings.simplefilter('ignore', category=DeprecationWarning)
         os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_JDBC')
         cls.conn=create_test_db()
-        #TestFiles\\TestCsvToCsv\\destLoc\\
+        #TestFiles/TestCsvToCsv/destLoc/
         cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Jdbc_To_Jdbc").enableHiveSupport().getOrCreate()
         execute_valid_process()
 
@@ -153,7 +153,7 @@ class Test(unittest.TestCase):
     #@unittest.skip("demonstrating skipping")         
     def test_PrcId_15(self):
         print("Validating test result of PrcId_15")
-        observedDF = self.spark.read.orc("TestFiles\\TestJdbcToJdbc\\destLoc\\DestId_15_orc\\orc\\")
+        observedDF = self.spark.read.orc("TestFiles/TestJdbcToJdbc/destLoc/DestId_15_orc/orc/")
         #obsCount=observedDF.show()
         filteredData=observedDF.filter('deptName = "ACCOUNTING" and job = "MANAGER"').select("employeeName").collect()
         #print("The count of records at destination location is :: "+str(obsCount))

@@ -1,6 +1,9 @@
 # DataIngestionTool
 
 ## Packaging steps (WIP)
+
+Install pip https://pip.pypa.io/en/stable/installing/
+
 1. Install pandas \
     pip install pandas
 2. Download requirement modules \

@@ -18,14 +18,14 @@ from pyspark.sql.types import *
 
 # instantiate config Parser
 config = ConfigParser()
-config.read('config\\config.cnf')
+config.read('config/config.cnf')
 
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print(module)
         prcs = "(prc_PrcId_7.json|prc_PrcId_8.json|prc_PrcId_9.json|prc_PrcId_12.json|prc_PrcId_13.json)"
         pool = 3
-        module.main('config\\config.cnf', prcs, pool)
+        module.main('config/config.cnf', prcs, pool)
         
 def create_test_db(sparkS):
     
@@ -100,7 +100,7 @@ class Test(unittest.TestCase):
                     .enableHiveSupport().getOrCreate()
         create_test_db(cls.spark)   
         
-        #TestFiles\\TestCsvToCsv\\destLoc\\  
+        #TestFiles/TestCsvToCsv/destLoc/  
         execute_valid_process()
  
     
@@ -183,7 +183,7 @@ class Test(unittest.TestCase):
     #@unittest.skip("demonstrating skipping")    
     def test_PrcId_13(self):
         print("Validating test result of PrcId_13")
-        observedDF = self.spark.read.json("TestFiles\\TestHiveToHive\\destLoc\\DestId_13_json\\json\\")
+        observedDF = self.spark.read.json("TestFiles/TestHiveToHive/destLoc/DestId_13_json/json/")
         #obsCount=observedDF.show()
         filteredData=observedDF.filter('deptName = "ACCOUNTING" and job = "MANAGER"').select("employeeName").collect()
         #print("The count of records at destination location is :: "+str(obsCount))

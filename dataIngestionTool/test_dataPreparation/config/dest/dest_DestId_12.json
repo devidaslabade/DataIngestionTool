@@ -1,3 +1,3 @@
 [
-{"destId":"DestId_12","destType":"local","destLocation":"C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\srcLoc\\","fileType":"jdbcclient","table":"dest_12","mode":"overwrite","url":"jdbc:sqlite:C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\dataIngestionTool\\test_dataPreparation\\TestFiles\\TestHiveToHive\\hivetest.db","driver" :"org.sqlite.JDBC", "user": "root","password":"","numPartitions":"1" }
+{"destId":"DestId_12","destType":"local","destLocation":"C:/Users/sk250102/Documents/Teradata/DIT/DataIngestionTool/srcLoc/","fileType":"jdbcclient","table":"dest_12","mode":"overwrite","url":"jdbc:sqlite:C:/Users/sk250102/Documents/Teradata/DIT/DataIngestionTool/dataIngestionTool/test_dataPreparation/TestFiles/TestHiveToHive/hivetest.db","driver" :"org.sqlite.JDBC", "user": "root","password":"","numPartitions":"1" }
 ]

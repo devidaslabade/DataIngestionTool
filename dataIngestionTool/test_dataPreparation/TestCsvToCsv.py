@@ -16,7 +16,7 @@ except:
     findspark.init()   
 # instantiate config Parser
 config = ConfigParser()
-config.read('config\\config.cnf')
+config.read('config/config.cnf')
 
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
@@ -24,10 +24,10 @@ def execute_valid_process():
         prcs = "(prc_PrcId_1.json|prc_PrcId_2.json|prc_PrcId_3.json|prc_PrcId_10.json|prc_PrcId_11.json)"
         #prcs = "(prc_PrcId_2.json)"
         pool = 3
-        module.main('config\\config.cnf', prcs, pool)
+        module.main('config/config.cnf', prcs, pool)
         
 def delete_dest_dir():
-    shutil.rmtree('TestFiles\\TestCsvToCsv\\destLoc\\', ignore_errors=True)
+    shutil.rmtree('TestFiles/TestCsvToCsv/destLoc/', ignore_errors=True)
     if os.path.isfile(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV')):
         os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV'))
 
@@ -63,7 +63,7 @@ class Test(unittest.TestCase):
     #@unittest.skip("demonstrating skipping")    
     def test_PrcId_1(self):
         print("Validating test result of PrcId_1")
-        observedDF = self.spark.read.json("TestFiles\\TestCsvToCsv\\destLoc\\DestId_1_json\\json\\")
+        observedDF = self.spark.read.json("TestFiles/TestCsvToCsv/destLoc/DestId_1_json/json/")
         obsCount=observedDF.count()
         filteredCount=observedDF.filter("cat_dpt_id = '2_X_Y_Z' and dept_name = 'Fitness' ").count()
         print("The count of records at destination location is :: "+str(obsCount))
@@ -80,7 +80,7 @@ class Test(unittest.TestCase):
     def test_PrcId_2(self):
         print("Validating test result of PrcId_2")
         isValid=False
-        destDir="TestFiles\\TestCsvToCsv\\destLoc\\DestId_2_json\\json\\"
+        destDir="TestFiles/TestCsvToCsv/destLoc/DestId_2_json/json/"
         observedDF = self.spark.read.json(destDir)
         obsCount=observedDF.count()
         print("The count of records at destination location is :: "+str(obsCount))
@@ -98,7 +98,7 @@ class Test(unittest.TestCase):
     #@unittest.skip("demonstrating skipping")
     def test_PrcId_3(self):
         print("Validating test result of PrcId_3")
-        observedDF = self.spark.read.json("TestFiles\\TestCsvToCsv\\destLoc\\DestId_3_json\\json\\")
+        observedDF = self.spark.read.json("TestFiles/TestCsvToCsv/destLoc/DestId_3_json/json/")
         obsCount=observedDF.show()
         filteredCount=observedDF.filter("category_department_id = 8 and cnt_cat = 10 ").count()
         #print("The count of records at destination location is :: "+str(obsCount))

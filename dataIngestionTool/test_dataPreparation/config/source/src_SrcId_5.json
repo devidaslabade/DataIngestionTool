@@ -1,3 +1,3 @@
 [
-{"srcId":"SrcId_5","srcType":"sqlLite","srcLocation":"C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\srcLoc\\","fileType":"jdbcclient","table":"department","header":"true","url":"jdbc:sqlite:C:\\Users\\sk250102\\Documents\\Teradata\\DIT\\DataIngestionTool\\dataIngestionTool\\test_dataPreparation\\TestFiles\\TestJdbcToJdbc\\test.db","driver" :"org.sqlite.JDBC","user": "root","password":""}
+{"srcId":"SrcId_5","srcType":"sqlLite","srcLocation":"C:/Users/sk250102/Documents/Teradata/DIT/DataIngestionTool/srcLoc/","fileType":"jdbcclient","table":"department","header":"true","url":"jdbc:sqlite:C:/Users/sk250102/Documents/Teradata/DIT/DataIngestionTool/dataIngestionTool/test_dataPreparation/TestFiles/TestJdbcToJdbc/test.db","driver" :"org.sqlite.JDBC","user": "root","password":""}
 ]
