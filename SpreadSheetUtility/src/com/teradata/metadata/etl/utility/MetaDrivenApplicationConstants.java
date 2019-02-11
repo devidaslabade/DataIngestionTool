@@ -20,6 +20,12 @@ public interface MetaDrivenApplicationConstants {
 	
 	public static final String INPUT_FILE_PATH = "inputFilePath";
 	
-	public static final String OUTPUT_FILE_PATH = "outputDir";
+	public static final String OUTPUT_FILE_PATH = "_outputDir";
+	
+	public static final String FILENAME_STARTS_SOURCE = "src";
+	
+	public static final String FILENAME_STARTS_DESTINATION = "dest";
+	
+	public static final String FILENAME_STARTS_PROCESS = "prc";
 	
 }
