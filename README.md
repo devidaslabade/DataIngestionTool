@@ -6,7 +6,7 @@ Check if pip exists, if it is not installed then follow the instruction at  http
 Now follow following steps :
 
 1. Install pandas on all nodes \
-    pip install pandas
+    pip install pandas --user
 2. Download modules mentioned in requirement \
 	pip wheel -r requirements.txt -w dist
 3. Rename the wheel extension to zip \

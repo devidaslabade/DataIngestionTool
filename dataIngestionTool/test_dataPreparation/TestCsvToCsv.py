@@ -28,8 +28,14 @@ def execute_valid_process():
         
 def delete_dest_dir():
     shutil.rmtree('TestFiles/TestCsvToCsv/destLoc/', ignore_errors=True)
+    if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_WAREHOUSE')):
+            shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_WAREHOUSE'), ignore_errors=True)
+        
+    if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_DERBY')):
+            shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_DERBY'), ignore_errors=True)  
+        
     if os.path.isfile(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV')):
-        os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV'))
+            os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV'))   
 
 class Test(unittest.TestCase):
 
@@ -55,6 +61,7 @@ class Test(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.spark.stop()
+        delete_dest_dir()
         print("tearDownClass")      
 
     '''

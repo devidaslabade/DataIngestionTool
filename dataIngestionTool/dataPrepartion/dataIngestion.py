@@ -526,7 +526,7 @@ def processFiles(argTuple):
     try:
         prc = pd.read_json(argTuple[0])
         #instantiate Kafka Producer
-        producer = KafkaProducer(bootstrap_servers=config.get('DIT_Kafka_config', 'KAFKA_BROKERS').split(','))
+        producer = KafkaProducer(bootstrap_servers=config.get('DIT_Kafka_config', 'KAFKA_BROKERS').split(','),api_version=eval(config.get('DIT_Kafka_config', 'API_VERSION')))
         for prcIdx, prcRow in prc[prc['isActive'] == "True"].iterrows():
             key=logKey(argTuple[1], prcRow['prcId'])
             spark_logger = logg.Log4j(argTuple[1],key)

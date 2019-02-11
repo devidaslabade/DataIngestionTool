@@ -18,26 +18,21 @@ from pyspark.sql.types import *
 
 # instantiate config Parser
 config = ConfigParser()
-config.read('config/config.cnf')
+config.read('config\\config.cnf')
 
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print(module)
         prcs = "(prc_PrcId_7.json|prc_PrcId_8.json|prc_PrcId_9.json|prc_PrcId_12.json|prc_PrcId_13.json)"
         pool = 3
-        module.main('config/config.cnf', prcs, pool)
-        
-        
-def delete_dest_dir():
-    if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_DERBY')):
-        shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_DERBY'), ignore_errors=True)         
+        module.main('config\\config.cnf', prcs, pool)
         
 def create_test_db(sparkS):
     
     """
     Setup a temporary database
     """
-          
+    '''      
     deptSchema = StructType([StructField("deptno", StringType(), True),
                              StructField("dname", StringType(), True),
                              StructField("loc", StringType(), True)])
@@ -45,10 +40,10 @@ def create_test_db(sparkS):
                 ('20', 'RESEARCH', 'BOSTON'),
                 ('30', 'SALES', 'CHICAGO'),
                 ('40', 'OPERATIONS', 'BOSTON'),
-                ('50', 'ADMIN', 'CHICAGO')]
+                ('50', 'ADMIN', 'CHICAGO')]'''
     # create a department table
-    deptDF = sparkS.createDataFrame(deptData,deptSchema)
-    deptDF.write.saveAsTable('department')
+    #deptDF = sparkS.createDataFrame(deptData,deptSchema)
+    #deptDF.write.saveAsTable('department')
     '''
     fldNames=[]
     for strctFld in deptSchema:
@@ -56,7 +51,7 @@ def create_test_db(sparkS):
             fldNames.append(strctFld.jsonValue()['name'])
     print(','.join(fldNames))   ''' 
     # create a employee table
-    empSchema = StructType([StructField("empId", StringType(), True),
+    '''empSchema = StructType([StructField("empId", StringType(), True),
                             StructField("empName", StringType(), True),
                             StructField("job", StringType(), True),
                             StructField("manager", StringType(), True),
@@ -78,11 +73,13 @@ def create_test_db(sparkS):
             ('7844','TURNER','SALESMAN','7698','8-9-1981','1500','0','30'),
             ('7876','ADAMS','CLERK','7788','13-7-1987','1100','null','20'),
             ('7900','JAMES','CLERK','7698','3-12-1981','950','null','30'),
-            ('7934','MILLER','CLERK','7782','23-1-1982','1300','null','10')]
+            ('7934','MILLER','CLERK','7782','23-1-1982','1300','null','10')]'''
 
     # create a department table
-    empDF = sparkS.createDataFrame(empData,empSchema)
-    empDF.write.saveAsTable('employee')
+    #empDF = sparkS.createDataFrame(empData,empSchema)
+    #empDF.write.saveAsTable('employee')
+    # Test data
+    
 
 
 class Test(unittest.TestCase):
@@ -91,7 +88,6 @@ class Test(unittest.TestCase):
     def setUpClass(cls):
         warnings.simplefilter('ignore', category=ImportWarning)
         warnings.simplefilter('ignore', category=DeprecationWarning)
-        delete_dest_dir()
         if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_WAREHOUSE')):
             shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_WAREHOUSE'), ignore_errors=True)
         
@@ -99,15 +95,15 @@ class Test(unittest.TestCase):
             shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_DERBY'), ignore_errors=True)  
         
         if os.path.isfile(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE')):
-            shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE'), ignore_errors=True)    
+            os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE'))    
 
         os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_HIVE')
         cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Hive_To_Hive")\
                     .enableHiveSupport().getOrCreate()
         create_test_db(cls.spark)   
         
-        #TestFiles/TestCsvToCsv/destLoc/  
-        execute_valid_process()
+        #TestFiles\\TestCsvToCsv\\destLoc\\  
+        #execute_valid_process()
  
     
     def setUp(self):
@@ -125,14 +121,6 @@ class Test(unittest.TestCase):
         #cls.conn.close()
         #os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC'))
         cls.spark.stop()
-        if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_WAREHOUSE')):
-            shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_WAREHOUSE'), ignore_errors=True)
-        
-        if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_DERBY')):
-            shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_DERBY'), ignore_errors=True)  
-        
-        if os.path.isfile(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE')):
-            shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE'), ignore_errors=True)  
         print("tearDownClass")      
 
     '''
@@ -152,7 +140,7 @@ class Test(unittest.TestCase):
     '''
     Read from a file, filter the data, transform data of one of the columns using SQL function, save the output in compressed file format
     '''
-    #@unittest.skip("demonstrating skipping") 
+    @unittest.skip("demonstrating skipping") 
     def test_PrcId_8(self):
         print("Validating test result of PrcId_8")        
         # Read from Hive
@@ -166,7 +154,7 @@ class Test(unittest.TestCase):
     '''
     Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
     '''
-    #@unittest.skip("demonstrating skipping")     
+    @unittest.skip("demonstrating skipping")     
     def test_PrcId_9(self):
         print("Validating test result of PrcId_9")
         # Read from Hive
@@ -179,7 +167,7 @@ class Test(unittest.TestCase):
 
         
         
-    #@unittest.skip("demonstrating skipping")    
+    @unittest.skip("demonstrating skipping")    
     def test_PrcId_12(self):
         print("Validating test result of PrcId_12")
         conn = sqlite3.connect(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE'))
@@ -194,10 +182,10 @@ class Test(unittest.TestCase):
         
           
 
-    #@unittest.skip("demonstrating skipping")    
+    @unittest.skip("demonstrating skipping")    
     def test_PrcId_13(self):
         print("Validating test result of PrcId_13")
-        observedDF = self.spark.read.json("TestFiles/TestHiveToHive/destLoc/DestId_13_json/json/")
+        observedDF = self.spark.read.json("TestFiles\\TestHiveToHive\\destLoc\\DestId_13_json\\json\\")
         #obsCount=observedDF.show()
         filteredData=observedDF.filter('deptName = "ACCOUNTING" and job = "MANAGER"').select("employeeName").collect()
         #print("The count of records at destination location is :: "+str(obsCount))
