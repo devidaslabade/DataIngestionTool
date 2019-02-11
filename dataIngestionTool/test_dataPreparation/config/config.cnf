@@ -20,14 +20,20 @@ LOG_DIR=C:/Users/sk250102/Documents/Teradata/DIT/DataIngestionTool/test_dataInge
 
 [DIT_TEST_CASE_config]
 SPARK_CONF_DIR_CSV = TestFiles/TestCsvToCsv/conf
-DB_LOC_CSV = TestFiles/TestCsvToCsv/csvtest.db
+DEST_LOC_CSV = TestFiles/TestCsvToCsv/destLoc/
+DB_LOC_CSV_JDBC = TestFiles/TestCsvToCsv/csvtest.db
 DB_LOC_CSV_WAREHOUSE = TestFiles/TestCsvToCsv/warehouse
 DB_LOC_CSV_DERBY = TestFiles/TestCsvToCsv/derby
 
-SPARK_CONF_DIR_JDBC = TestFiles/TestJdbcToJdbc/conf
-DB_LOC_JDBC = TestFiles//TestJdbcToJdbc//test.db
-
 SPARK_CONF_DIR_HIVE = TestFiles/TestHiveToHive/conf
-DB_LOC_HIVE = TestFiles/TestHiveToHive/hivetest.db
+DEST_LOC_HIVE = TestFiles/TestHiveToHive/destLoc
+DB_LOC_HIVE_JDBC = TestFiles/TestHiveToHive/hivetest.db
 DB_LOC_HIVE_WAREHOUSE = TestFiles/TestHiveToHive/warehouse
 DB_LOC_HIVE_DERBY = TestFiles/TestHiveToHive/derby
+
+
+SPARK_CONF_DIR_JDBC = TestFiles/TestJdbcToJdbc/conf
+DEST_LOC_JDBC = TestFiles/TestJdbcToJdbc/destLoc
+DB_LOC_JDBC = TestFiles/TestJdbcToJdbc/test.db
+DB_LOC_JDBC_WAREHOUSE = TestFiles/TestJdbcToJdbc/warehouse
+DB_LOC_JDBC_DERBY = TestFiles/TestJdbcToJdbc/derby

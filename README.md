@@ -3,6 +3,11 @@
 ## Packaging steps (WIP)
 Check if pip exists, if it is not installed then follow the instruction at  https://pip.pypa.io/en/stable/installing/
 
+Also, check if setuptools is installed on the system which will be used to package the utility. \
+***pip show setuptools***\
+If it is not installed then use the following command \
+***pip install -U setuptools***
+
 Now follow following steps :
 
 1. Install pandas on all nodes \
@@ -33,16 +38,17 @@ python driver.py --job=dataPrepartion.dataIngestion --configLoc=C:\\Users\\sk250
 
 For executing jobs using Spark Submit :
 
-cd /home/harry/environment_withNumpy/DataIngestionTool/dataIngestionTool/dataPrepartion
+cd ~/DataIngestionTool/dataIngestionTool/dataPrepartion
 
-$spark-submit --py-files /home/harry/environment_withNumpy/DataIngestionTool/dist/findspark-1.3.0-py2.py3-none-any.zip,/home/harry/environment_withNumpy/DataIngestionTool/dist/kafka-1.3.5-py2.py3-none-any.zip,/home/harry/environment_withNumpy/DataIngestionTool/dist/dataIngestionTool-0.1-py3-none-any.zip driver.py --job=dataIngestion --configLoc=/home/harry/DataIngestionTool_dist/config/config.cnf --prcs="prc_PrcId_[0-9].json" --pool=3
+/usr/hdp/current/spark2-client/bin/spark-submit --py-files /home/ec2-user/Utility/DataIngestionTool/dist/findspark-1.3.0-py2.py3-none-any.zip,/home/ec2-user/Utility/DataIngestionTool/dist/kafka-1.3.5-py2.py3-none-any.zip,/home/ec2-user/Utility/DataIngestionTool/dist/configparser-3.7.1-py2-none-any.zip,/home/ec2-user/Utility/DataIngestionTool/dist/dataIngestionTool-0.1-py2.py3-none-any.zip driver.py --job=dataPrepartion.dataIngestion --configLoc=/home/ec2-user/Utility/config/config.cnf --prcs="prc_PrcId_[0-1].json" --pool=3
 
 
 ### Supported Data Sources
 1. Delimited Text files (CSV, TAB etc )
 	* ***Delimiter*** : The file type for Text based files can either be "csv" or "delimited" but the delimiter value is mandatory to be added in source file having following syntax for csv :  ***"delimiter":","***
-	* ***Infer Schema*** : For text based files schema can be inferred by adding the following json filed in Source files : ***"inferSchema":"true"***
-	* ***Header*** : Text based files can also have header information and hence the same can be utilized for column refrence by adding following json filed in Source files :  ***"header":"true"***
+	* ***Infer Schema*** : For text based files schema can be inferred by adding the following json filed in Source files : ***"inferSchema":"true"***  	
+	* ***Header*** : Text based files can also have header information and hence the same can be utilized for column refrence by adding following json filed in Source files :  ***"header":"true"*** \
+	Also,note that if infer Schema is true then Header should also be true as column names will be derived from Header line.
 2. ORC
 3. Parquet
 4. Json

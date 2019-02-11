@@ -6,6 +6,7 @@ import unittest
 import sqlite3
 import warnings
 import importlib
+import shutil
 from configparser import ConfigParser
 
 try:
@@ -20,18 +21,29 @@ config.read('config/config.cnf')
 
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
-        print(module)        
+        print("+++++++++++++++++++++Executing Test cases with JDBC supported DB  +++++++++++++++++++++++")   
         prcs = "(prc_PrcId_4.json|prc_PrcId_5.json|prc_PrcId_6.json|prc_PrcId_14.json|prc_PrcId_15.json)"
         pool = 3
         module.main('config/config.cnf', prcs, pool)
+        
+def delete_dest_dir():
+    if os.path.exists(config.get('DIT_TEST_CASE_config', 'DEST_LOC_JDBC')):
+        shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DEST_LOC_JDBC'))   
+        
+    if os.path.isfile(config.get('DIT_TEST_CASE_config', 'DB_LOC_JDBC')):
+       os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC_JDBC'))       
+    
+    if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_JDBC_WAREHOUSE')):
+        shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_JDBC_WAREHOUSE'))
+        
+    if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_JDBC_DERBY')):
+        shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_JDBC_DERBY'),ignore_errors=True)         
         
 def create_test_db():
     
     """
     Setup a temporary database
     """
-    if os.path.isfile(config.get('DIT_TEST_CASE_config', 'DB_LOC_JDBC')):
-        os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC_JDBC'))
     conn = sqlite3.connect(config.get('DIT_TEST_CASE_config', 'DB_LOC_JDBC'))
     cursor = conn.cursor()
     # create a table
@@ -72,6 +84,7 @@ class Test(unittest.TestCase):
         warnings.simplefilter('ignore', category=ImportWarning)
         warnings.simplefilter('ignore', category=DeprecationWarning)
         os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_JDBC')
+        delete_dest_dir()
         cls.conn=create_test_db()
         #TestFiles/TestCsvToCsv/destLoc/
         cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Jdbc_To_Jdbc").enableHiveSupport().getOrCreate()
@@ -95,6 +108,7 @@ class Test(unittest.TestCase):
         cls.conn.close()
         #os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC_JDBC'))
         cls.spark.stop()
+        delete_dest_dir()
         print("tearDownClass")      
 
     '''
@@ -153,7 +167,7 @@ class Test(unittest.TestCase):
     #@unittest.skip("demonstrating skipping")         
     def test_PrcId_15(self):
         print("Validating test result of PrcId_15")
-        observedDF = self.spark.read.orc("TestFiles/TestJdbcToJdbc/destLoc/DestId_15_orc/orc/")
+        observedDF = self.spark.read.orc(config.get('DIT_TEST_CASE_config', 'DEST_LOC_JDBC').strip()+"/DestId_15_orc/orc/")
         #obsCount=observedDF.show()
         filteredData=observedDF.filter('deptName = "ACCOUNTING" and job = "MANAGER"').select("employeeName").collect()
         #print("The count of records at destination location is :: "+str(obsCount))

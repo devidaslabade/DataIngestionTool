@@ -22,15 +22,26 @@ config.read('config/config.cnf')
 
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
-        print(module)
+        print("+++++++++++++++++++++Executing Test cases with source as Hive +++++++++++++++++++++++")
         prcs = "(prc_PrcId_7.json|prc_PrcId_8.json|prc_PrcId_9.json|prc_PrcId_12.json|prc_PrcId_13.json)"
         pool = 3
         module.main('config/config.cnf', prcs, pool)
         
         
 def delete_dest_dir():
-    if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_DERBY')):
-        shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_DERBY'), ignore_errors=True)         
+    if os.path.exists(config.get('DIT_TEST_CASE_config', 'DEST_LOC_HIVE')):
+        shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DEST_LOC_HIVE'))   
+        
+    if os.path.isfile(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_JDBC')):
+       os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_JDBC'))       
+    
+    if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_WAREHOUSE')):
+        shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_WAREHOUSE'))
+        
+    if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_DERBY')):
+        shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_DERBY'),ignore_errors=True)  
+        
+         
         
 def create_test_db(sparkS):
     
@@ -92,14 +103,6 @@ class Test(unittest.TestCase):
         warnings.simplefilter('ignore', category=ImportWarning)
         warnings.simplefilter('ignore', category=DeprecationWarning)
         delete_dest_dir()
-        if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_WAREHOUSE')):
-            shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_WAREHOUSE'), ignore_errors=True)
-        
-        if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_DERBY')):
-            shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_DERBY'), ignore_errors=True)  
-        
-        if os.path.isfile(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE')):
-            shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE'), ignore_errors=True)    
 
         os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_HIVE')
         cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Hive_To_Hive")\
@@ -125,14 +128,7 @@ class Test(unittest.TestCase):
         #cls.conn.close()
         #os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC'))
         cls.spark.stop()
-        if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_WAREHOUSE')):
-            shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_WAREHOUSE'), ignore_errors=True)
-        
-        if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_DERBY')):
-            shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_DERBY'), ignore_errors=True)  
-        
-        if os.path.isfile(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE')):
-            shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE'), ignore_errors=True)  
+        delete_dest_dir()
         print("tearDownClass")      
 
     '''
@@ -182,7 +178,7 @@ class Test(unittest.TestCase):
     #@unittest.skip("demonstrating skipping")    
     def test_PrcId_12(self):
         print("Validating test result of PrcId_12")
-        conn = sqlite3.connect(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE'))
+        conn = sqlite3.connect(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_JDBC'))
         cursor = conn.cursor()
         # Read from JDBC Source
         resultSet=cursor.execute('select employeeName from Dest_12 where deptName = "ACCOUNTING" and job = "MANAGER"').fetchall()        
@@ -197,7 +193,7 @@ class Test(unittest.TestCase):
     #@unittest.skip("demonstrating skipping")    
     def test_PrcId_13(self):
         print("Validating test result of PrcId_13")
-        observedDF = self.spark.read.json("TestFiles/TestHiveToHive/destLoc/DestId_13_json/json/")
+        observedDF = self.spark.read.json(config.get('DIT_TEST_CASE_config', 'DEST_LOC_HIVE').strip()+"/DestId_13_json/json/")
         #obsCount=observedDF.show()
         filteredData=observedDF.filter('deptName = "ACCOUNTING" and job = "MANAGER"').select("employeeName").collect()
         #print("The count of records at destination location is :: "+str(obsCount))
