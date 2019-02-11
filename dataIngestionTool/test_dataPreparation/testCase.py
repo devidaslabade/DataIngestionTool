@@ -15,6 +15,9 @@ suite.addTests(loader.loadTestsFromModule(TestCsvToCsv))
 suite.addTests(loader.loadTestsFromModule(TestHiveToHive))
 #suite.addTests(loader.loadTestsFromModule(TestJdbcToJdbc))
 
+#TODO to remove/stop derby instance of each module before running the next module.
+
+
 # initialize a runner, pass it your suite and run it
 runner = unittest.TextTestRunner(verbosity=3)
 result = runner.run(suite)

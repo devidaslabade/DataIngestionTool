@@ -16,6 +16,8 @@ except:
     findspark.init()
 from pyspark.sql.types import *   
 
+from pyspark.sql.functions import regexp_extract, col
+
 # instantiate config Parser
 config = ConfigParser()
 config.read('config\\config.cnf')
@@ -26,6 +28,19 @@ def execute_valid_process():
         prcs = "(prc_PrcId_7.json|prc_PrcId_8.json|prc_PrcId_9.json|prc_PrcId_12.json|prc_PrcId_13.json)"
         pool = 3
         module.main('config\\config.cnf', prcs, pool)
+
+def delete_dest_dir():
+    if os.path.exists(config.get('DIT_TEST_CASE_config', 'DEST_LOC_FXDWDTH')):
+        shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DEST_LOC_FXDWDTH'))   
+    
+    if os.path.isfile(config.get('DIT_TEST_CASE_config', 'DB_LOC_FXDWDTH_JDBC')):
+        os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC_FXDWDTH_JDBC'))  
+    
+    if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_FXDWDTH_WAREHOUSE')):
+            shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_FXDWDTH_WAREHOUSE'))
+        
+    if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_FXDWDTH_DERBY')):
+            shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_FXDWDTH_DERBY'),ignore_errors=True)  
         
 def create_test_db(sparkS):
     
@@ -79,7 +94,11 @@ def create_test_db(sparkS):
     #empDF = sparkS.createDataFrame(empData,empSchema)
     #empDF.write.saveAsTable('employee')
     # Test data
-    
+    td = [("1652401101720123930621977TXNPUESTxys",),("1652401101720123930621977TXNPUESTxys",)] 
+    tdSche =  StructType([StructField("empId", StringType(), True)])
+    testDf= sparkS.createDataFrame(td,tdSche)
+    testDf.show()
+    testDf.write.saveAsTable('tested')
 
 
 class Test(unittest.TestCase):
@@ -88,17 +107,9 @@ class Test(unittest.TestCase):
     def setUpClass(cls):
         warnings.simplefilter('ignore', category=ImportWarning)
         warnings.simplefilter('ignore', category=DeprecationWarning)
-        if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_WAREHOUSE')):
-            shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_WAREHOUSE'), ignore_errors=True)
-        
-        if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_DERBY')):
-            shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_DERBY'), ignore_errors=True)  
-        
-        if os.path.isfile(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE')):
-            os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE'))    
-
-        os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_HIVE')
-        cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Hive_To_Hive")\
+        delete_dest_dir()
+        os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_FXDWDTH')
+        cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Fixed_Width")\
                     .enableHiveSupport().getOrCreate()
         create_test_db(cls.spark)   
         
@@ -121,6 +132,7 @@ class Test(unittest.TestCase):
         #cls.conn.close()
         #os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC'))
         cls.spark.stop()
+        delete_dest_dir()
         print("tearDownClass")      
 
     '''
@@ -130,10 +142,25 @@ class Test(unittest.TestCase):
     def test_PrcId_7(self):
         print("Validating test result of PrcId_7")
         # Read from Hive
-        df_load = self.spark.sql('select job from fin_tab_dest7 where deptName="ACCOUNTING" and salary=5000')
-        retVal=df_load.collect()
+        pattern = r'(.{5})(.{2})(.{8})(.{10})(.{7}).*'
+        df_load = self.spark.sql('select * from tested')
+        df_load.show(truncate=False)
+        fields = df_load.select(
+                          regexp_extract('empId', pattern, 1).alias('host'),
+                          regexp_extract('empId', pattern, 2).alias('hosted')
+                          )
+        fields.show(truncate=False)
+        df_l = self.spark.sql("select split(regexp_replace(empId, '(.{5})(.{2})(.{8})(.{10})(.{7}).*','$1,$2,$3,$4,$5'), ',') from tested")
+        df_l.show(truncate=False)
+        
+        df_le = self.spark.sql("select split(regexp_replace(empId, '(.{5})(.{2})(.{8})(.{10})(.{7}).*','$1,$2,$3,$4,$5'), ',') as temp from tested")
+        #using a list comprehension in python
+        tesDf=df_le.select(*(col('temp').getItem(i).alias(f'col{i}') for i in range(5)))
+        tesDf.show(truncate=False)
+        #(df.withColumn('temp', split('columnToSplit', '\\.')).select(*(col('temp').getItem(i).alias(f'col{i}') for i in range(3))).show()
+        #retVal=df_load.collect()
         #print(retVal[0].job)
-        self.assertEqual("PRESIDENT", retVal[0]['job'])
+        #self.assertEqual("PRESIDENT", retVal[0]['job'])
 
 
 
