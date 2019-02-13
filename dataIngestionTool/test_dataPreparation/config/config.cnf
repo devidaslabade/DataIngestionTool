@@ -8,7 +8,7 @@ destCols = config/dest/
 tptFolder = config/
 
 [DIT_Kafka_config]
-KAFKA_BROKERS= 10.0.75.1:9092
+KAFKA_BROKERS= localhost:9092
 TOPIC=test
 GROUP_ID=pyhton_grp_id
 AUTO_OFFSET_RESET=earliest
