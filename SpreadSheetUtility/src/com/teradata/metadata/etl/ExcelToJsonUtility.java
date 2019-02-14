@@ -56,7 +56,7 @@ public class ExcelToJsonUtility implements MetaDrivenApplicationConstants {
 		Properties prop = new Properties();
 		InputStream inputStream = null;
 		try {
-			inputStream = new FileInputStream("mapping.properties");
+			inputStream = ClassLoader.getSystemResourceAsStream("mapping.properties");
 			// load a properties file
 			prop.load(inputStream);
 			Enumeration keys = prop.propertyNames();
@@ -286,7 +286,17 @@ public class ExcelToJsonUtility implements MetaDrivenApplicationConstants {
                     
                     // Get the output file absolute path.
                     //String filePath = currentWorkingFolder + filePathSeperator + fileName;
-                    String filePath = PROPERTY_MAP.get(OUTPUT_FILE_PATH)+jsonFileName;
+                    String filepath_prefix = "";
+                    if(jsonFileName.startsWith(FILENAME_STARTS_SOURCE))
+                    {
+                    	filepath_prefix = FILENAME_STARTS_SOURCE;
+                    } else if(jsonFileName.startsWith(FILENAME_STARTS_DESTINATION)) {
+                    	filepath_prefix = FILENAME_STARTS_DESTINATION;
+                    } else {
+                    	filepath_prefix = FILENAME_STARTS_PROCESS;
+                    }
+                    System.out.println("Path::"+filepath_prefix+OUTPUT_FILE_PATH);
+                    String filePath = PROPERTY_MAP.get(filepath_prefix+OUTPUT_FILE_PATH)+jsonFileName;
                     // Create File, FileWriter and BufferedWriter object.
                     File file = new File(filePath);
 
@@ -302,7 +312,6 @@ public class ExcelToJsonUtility implements MetaDrivenApplicationConstants {
                     buffWriter.close();
 
                     System.out.println(filePath + " has been created.");
-        			
         			
         		}
         	}
