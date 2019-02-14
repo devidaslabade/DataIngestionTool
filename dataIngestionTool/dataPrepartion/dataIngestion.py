@@ -163,6 +163,53 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,key,
                     df = spark.read.format("csv").schema(schemaMap[srcKey]).option("header", src['header'].any()).option("delimiter", delimiter).load(src['srcLocation'].any())
                 else:
                     df = spark.read.format("csv").option("header", src['header'].any()).option("delimiter", delimiter).option("inferSchema", src.get('inferSchema').str.cat().lower()).load(src['srcLocation'].any())
+            elif src['fileType'].any() == "fixedWidth":
+                publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
+                print("print srcMap",srcMap)
+                print("print schemaMap",schemaMap)
+                print("print destMap",destMap)
+                print("print queryMap",queryMap)
+                print("print filterCondition",filterCondition)
+                ##TODO fieldNames() will be available in verions 2.3.0 onwards ( https://jira.apache.org/jira/browse/SPARK-20090)
+                #colName = ','.join(schemaMap[srcKey].fieldNames())
+                #Using alternate approach to fieldNames() until then
+                recordSize=src.get('recordSize') if src.get('recordSize') is not None else "NA"                
+                posColmap={}
+                posLenMap={}
+                for strctFld in schemaMap[srcKey]:
+                    print(strctFld.jsonValue())
+                    posLenMap[strctFld.jsonValue()['metadata']['colPos']]=strctFld.jsonValue()['metadata']['length']
+                    posColmap[strctFld.jsonValue()['metadata']['colPos']]=strctFld.jsonValue()['name']
+                    #fldNames.append(strctFld.jsonValue()['name'])
+                #colName = ','.join(fldNames) 
+                print(posLenMap) 
+                reglst=[]
+                itmlst=[]
+                for colPos,length in sorted(posLenMap.items()):
+                    reglst.append("(.{"+str(length)+"})")
+                    itmlst.append("$"+str(colPos)+"^")
+                regexExpr= ''.join(reglst)
+                itemExpr= ''.join(itmlst)  
+                print(regexExpr)
+                print(itemExpr)
+                #
+                collst=[]
+                for colPos,colName in sorted(posColmap.items()):
+                    collst.append("trim(splitcol["+str(colPos-1)+"]) as "+colName)
+                colExpr= ','.join(collst) 
+                print(colExpr)   
+                #query="select split(regexp_replace(value, '{}','{}'),'\\\^') from fixedWidth_"+src['srcId'].any()
+                query="split(regexp_replace(value, '{}','{}'),'\\\^') as splitcol"
+                print(query.format(regexExpr,itemExpr[:-1]))
+                ## Comment the above line till fldNames and uncomment the previous approach in future releases.
+                fxdwdthDf=spark.read.text(src['srcLocation'].any())
+                fxdwdthDf.show(truncate=False)
+                fxdwdthDf.printSchema()
+                splitColDf=fxdwdthDf.selectExpr(query.format(regexExpr,itemExpr[:-1])) #.write.saveAsTable('fixedWidth_'+src['srcId'].any())                              
+                #df = spark.sql("select trim(splitcol[0]) as firstCol from "+'fixedWidth_'+src['srcId'].any())
+                df=splitColDf.selectExpr(collst)
+                df.show(truncate=False)
+
             elif src['fileType'].any() == "hivetable":
                 publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from table "+src["table"].any())
                 ##TODO fieldNames() will be available in verions 2.3.0 onwards ( https://jira.apache.org/jira/browse/SPARK-20090)
@@ -477,29 +524,31 @@ def fetchSchema(srcCols,key, producer,spark_logger):
         publishKafka(producer,spark_logger,key,"INFO","Fetching schema values for SRC Id " + srcCols['srcId'].any())
         fields = []
         for idx, clm in srcCols.iterrows():
+            colPos= clm.get('colPos') if clm.get('colPos') is not None else "NA"
+            length= clm.get('length') if clm.get('length') is not None else "NA"
             if clm['colType'].lower() == "String".lower():
-                colField = StructField(clm['colName'], StringType(), eval(clm['isNullable']))
+                colField = StructField(name=clm['colName'], dataType=StringType(), nullable=eval(clm['isNullable']),metadata={'colPos': colPos,'length':length})
                 fields.append(colField)
             elif clm['colType'].lower() == "Int".lower():
-                colField = StructField(clm['colName'], IntegerType(), eval(clm['isNullable']))
+                colField = StructField(name=clm['colName'], dataType=IntegerType(), nullable=eval(clm['isNullable']),metadata={'colPos': colPos,'length':length})
                 fields.append(colField)
             elif clm['colType'].lower() == "Long".lower():
-                colField = StructField(clm['colName'], LongType(), eval(clm['isNullable']))
+                colField = StructField(name=clm['colName'], dataType=LongType(), nullable=eval(clm['isNullable']),metadata={'colPos': colPos,'length':length})
                 fields.append(colField)
             elif clm['colType'].lower() == "Float".lower():
-                colField = StructField(clm['colName'], FloatType(), eval(clm['isNullable']))
+                colField = StructField(name=clm['colName'], dataType=FloatType(), nullable=eval(clm['isNullable']),metadata={'colPos': colPos,'length':length})
                 fields.append(colField)
             elif clm['colType'].lower() == "Double".lower():
-                colField = StructField(clm['colName'], DoubleType(), eval(clm['isNullable']))
+                colField = StructField(name=clm['colName'], dataType=DoubleType(), nullable=eval(clm['isNullable']),metadata={'colPos': colPos,'length':length})
                 fields.append(colField)
             elif clm['colType'].lower() == "Boolean".lower():
-                colField = StructField(clm['colName'], BooleanType(), eval(clm['isNullable']))
+                colField = StructField(name=clm['colName'], dataType=BooleanType(), nullable=eval(clm['isNullable']),metadata={'colPos': colPos,'length':length})
                 fields.append(colField)
             elif clm['colType'].lower() == "Timestamp".lower():
-                colField = StructField(clm['colName'], TimestampType(), eval(clm['isNullable']))
+                colField = StructField(name=clm['colName'], dataType=TimestampType(), nullable=eval(clm['isNullable']),metadata={'colPos': colPos,'length':length})
                 fields.append(colField)
             else:
-                colField = StructField(clm['colName'], StringType(), eval(clm['isNullable']))
+                colField = StructField(name=clm['colName'], dataType=StringType(), nullable=eval(clm['isNullable']),metadata={'colPos': colPos,'length':length})
                 fields.append(colField)
         return fields
     except Exception as e:

@@ -1,0 +1,3 @@
+[
+   {"destId":"DestId_16","destType":"local","destLocation":"TestFiles/TestFixedWidth/destLoc/","fileType":"json" ,"mode":"overwrite","compression":"bzip2"}
+]

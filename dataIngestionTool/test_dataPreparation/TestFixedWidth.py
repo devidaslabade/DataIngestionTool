@@ -25,7 +25,8 @@ config.read('config\\config.cnf')
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print(module)
-        prcs = "(prc_PrcId_7.json|prc_PrcId_8.json|prc_PrcId_9.json|prc_PrcId_12.json|prc_PrcId_13.json)"
+        prcs = "(prc_PrcId_16.json)"
+        #prcs = "(prc_PrcId_7.json|prc_PrcId_8.json|prc_PrcId_9.json|prc_PrcId_12.json|prc_PrcId_13.json)"
         pool = 3
         module.main('config\\config.cnf', prcs, pool)
 
@@ -99,6 +100,10 @@ def create_test_db(sparkS):
     testDf= sparkS.createDataFrame(td,tdSche)
     testDf.show()
     testDf.write.saveAsTable('tested')
+    fxdwdthDf=sparkS.read.text("TestFiles/TestFixedWidth/fixed-width-sample.data")
+    fxdwdthDf.show(truncate=False)
+    fxdwdthDf.printSchema()
+    fxdwdthDf.write.saveAsTable('fixedWidth')
 
 
 class Test(unittest.TestCase):
@@ -111,10 +116,10 @@ class Test(unittest.TestCase):
         os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_FXDWDTH')
         cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Fixed_Width")\
                     .enableHiveSupport().getOrCreate()
-        create_test_db(cls.spark)   
+        #create_test_db(cls.spark)   
         
         #TestFiles\\TestCsvToCsv\\destLoc\\  
-        #execute_valid_process()
+        execute_valid_process()
  
     
     def setUp(self):
@@ -132,13 +137,13 @@ class Test(unittest.TestCase):
         #cls.conn.close()
         #os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC'))
         cls.spark.stop()
-        delete_dest_dir()
+        #delete_dest_dir()
         print("tearDownClass")      
 
     '''
     Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
     '''
-    #@unittest.skip("demonstrating skipping") 
+    @unittest.skip("demonstrating skipping") 
     def test_PrcId_7(self):
         print("Validating test result of PrcId_7")
         # Read from Hive
@@ -150,13 +155,20 @@ class Test(unittest.TestCase):
                           regexp_extract('empId', pattern, 2).alias('hosted')
                           )
         fields.show(truncate=False)
-        df_l = self.spark.sql("select split(regexp_replace(empId, '(.{5})(.{2})(.{8})(.{10})(.{7}).*','$1,$2,$3,$4,$5'), ',') from tested")
+        query="select split(regexp_replace(empId, '(.{5})(.{2})(.{8})(.{10})(.{7})(.*)','$1^$2^$3^$4^$5^$6'),'\\\^') from tested"
+        df_l = self.spark.sql(query)
         df_l.show(truncate=False)
         
         df_le = self.spark.sql("select split(regexp_replace(empId, '(.{5})(.{2})(.{8})(.{10})(.{7}).*','$1,$2,$3,$4,$5'), ',') as temp from tested")
         #using a list comprehension in python
-        tesDf=df_le.select(*(col('temp').getItem(i).alias(f'col{i}') for i in range(5)))
+        collist=[col('temp').getItem(i).alias(f'col{i}') for i in range(5)]
+        print(collist)
+        #tesDf=df_le.select(*(col('temp').getItem(i).alias(f'col{i}') for i in range(5)))
+        tesDf=df_le.select(collist)
         tesDf.show(truncate=False)
+        tesDf.write.saveAsTable('test')
+        df_l1 = self.spark.sql("select col0 AS firstCol,col1 AS secondCol from test")
+        df_l1.show(truncate=False)
         #(df.withColumn('temp', split('columnToSplit', '\\.')).select(*(col('temp').getItem(i).alias(f'col{i}') for i in range(3))).show()
         #retVal=df_load.collect()
         #print(retVal[0].job)
@@ -167,14 +179,20 @@ class Test(unittest.TestCase):
     '''
     Read from a file, filter the data, transform data of one of the columns using SQL function, save the output in compressed file format
     '''
-    @unittest.skip("demonstrating skipping") 
-    def test_PrcId_8(self):
-        print("Validating test result of PrcId_8")        
-        # Read from Hive
-        df_load = self.spark.sql('select salary from fin_tab_dest8 where departmentNo=20 and employeeName="JONES"')
-        #df_load.show()
-        retVal=df_load.collect()
-        self.assertEqual('2975', retVal[0]['salary'])
+    #@unittest.skip("demonstrating skipping") 
+    def test_PrcId_16(self):
+        print("Validating test result of PrcId_16")  
+        isValid=False
+        destDir=config.get('DIT_TEST_CASE_config', 'DEST_LOC_FXDWDTH').strip()+"/DestId_16_json/json/"
+        observedDF = self.spark.read.json(destDir)
+        obsCount=observedDF.count()
+        print("The count of records at destination location is :: "+str(obsCount))
+        for file in os.listdir(destDir):
+            if file.endswith(".bz2") and obsCount== 10:
+                print("The file is bzip compressed :: "+file)                
+                isValid=True
+        self.assertTrue(isValid)
+
 
 
 

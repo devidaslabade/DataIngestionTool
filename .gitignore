@@ -132,6 +132,11 @@ dataIngestionTool/test_dataPreparation/TestFiles/TestHiveToHive/warehouse/
 dataIngestionTool/test_dataPreparation/TestFiles/TestHiveToHive/destLoc/
 dataIngestionTool/test_dataPreparation/TestFiles/TestHiveToHive/*.db
 
+dataIngestionTool/test_dataPreparation/TestFiles/TestFixedWidth/derby/
+dataIngestionTool/test_dataPreparation/TestFiles/TestFixedWidth/warehouse/
+dataIngestionTool/test_dataPreparation/TestFiles/TestFixedWidth/destLoc/
+dataIngestionTool/test_dataPreparation/TestFiles/TestFixedWidth/*.db
+
 */destLoc/
 
 
