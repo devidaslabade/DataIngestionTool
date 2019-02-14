@@ -25,8 +25,8 @@ config.read('config\\config.cnf')
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print(module)
-        prcs = "(prc_PrcId_16.json)"
-        #prcs = "(prc_PrcId_7.json|prc_PrcId_8.json|prc_PrcId_9.json|prc_PrcId_12.json|prc_PrcId_13.json)"
+        #prcs = "(prc_PrcId_1.json|prc_PrcId_19.json)"
+        prcs = "(prc_PrcId_16.json|prc_PrcId_17.json|prc_PrcId_18.json|prc_PrcId_19.json)"
         pool = 3
         module.main('config\\config.cnf', prcs, pool)
 
@@ -43,68 +43,6 @@ def delete_dest_dir():
     if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_FXDWDTH_DERBY')):
             shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_FXDWDTH_DERBY'),ignore_errors=True)  
         
-def create_test_db(sparkS):
-    
-    """
-    Setup a temporary database
-    """
-    '''      
-    deptSchema = StructType([StructField("deptno", StringType(), True),
-                             StructField("dname", StringType(), True),
-                             StructField("loc", StringType(), True)])
-    deptData = [('10', 'ACCOUNTING', 'NEW YORK'),
-                ('20', 'RESEARCH', 'BOSTON'),
-                ('30', 'SALES', 'CHICAGO'),
-                ('40', 'OPERATIONS', 'BOSTON'),
-                ('50', 'ADMIN', 'CHICAGO')]'''
-    # create a department table
-    #deptDF = sparkS.createDataFrame(deptData,deptSchema)
-    #deptDF.write.saveAsTable('department')
-    '''
-    fldNames=[]
-    for strctFld in deptSchema:
-            print(strctFld.jsonValue()['name'])
-            fldNames.append(strctFld.jsonValue()['name'])
-    print(','.join(fldNames))   ''' 
-    # create a employee table
-    '''empSchema = StructType([StructField("empId", StringType(), True),
-                            StructField("empName", StringType(), True),
-                            StructField("job", StringType(), True),
-                            StructField("manager", StringType(), True),
-                            StructField("hiredate", StringType(), True),
-                            StructField("salary", StringType(), True),
-                            StructField("comm", StringType(), True),
-                            StructField("deptno", StringType(), True)]) 
-
-    empData = [('7839','KING','PRESIDENT','null','17-11-1981','5000','null','10'),
-            ('7698','BLAKE','MANAGER','7839','1-5-1981','2850','null','30'),
-            ('7782','CLARK','MANAGER','7839','9-6-1981','2450','null','10'),
-            ('7566','JONES','MANAGER','7839','2-4-1981','2975','null','20'),
-            ('7788','SCOTT','ANALYST','7566','13-7-1987','3000','null','20'),
-            ('7902','FORD','ANALYST','7566','3-12-1981','3000','null','20'),
-            ('7369','SMITH','CLERK','7902','17-12-1980','800','null','20'),
-            ('7499','ALLEN','SALESMAN','7698','20-2-1981','1600','300','30'),
-            ('7521','WARD','SALESMAN','7698','22-2-1981','1250','500','30'),
-            ('7654','MARTIN','SALESMAN','7698','28-9-1981','1250','1400','30'),
-            ('7844','TURNER','SALESMAN','7698','8-9-1981','1500','0','30'),
-            ('7876','ADAMS','CLERK','7788','13-7-1987','1100','null','20'),
-            ('7900','JAMES','CLERK','7698','3-12-1981','950','null','30'),
-            ('7934','MILLER','CLERK','7782','23-1-1982','1300','null','10')]'''
-
-    # create a department table
-    #empDF = sparkS.createDataFrame(empData,empSchema)
-    #empDF.write.saveAsTable('employee')
-    # Test data
-    td = [("1652401101720123930621977TXNPUESTxys",),("1652401101720123930621977TXNPUESTxys",)] 
-    tdSche =  StructType([StructField("empId", StringType(), True)])
-    testDf= sparkS.createDataFrame(td,tdSche)
-    testDf.show()
-    testDf.write.saveAsTable('tested')
-    fxdwdthDf=sparkS.read.text("TestFiles/TestFixedWidth/fixed-width-sample.data")
-    fxdwdthDf.show(truncate=False)
-    fxdwdthDf.printSchema()
-    fxdwdthDf.write.saveAsTable('fixedWidth')
-
 
 class Test(unittest.TestCase):
 
@@ -116,9 +54,6 @@ class Test(unittest.TestCase):
         os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_FXDWDTH')
         cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Fixed_Width")\
                     .enableHiveSupport().getOrCreate()
-        #create_test_db(cls.spark)   
-        
-        #TestFiles\\TestCsvToCsv\\destLoc\\  
         execute_valid_process()
  
     
@@ -134,46 +69,9 @@ class Test(unittest.TestCase):
         """
         Delete the database
         """
-        #cls.conn.close()
-        #os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC'))
         cls.spark.stop()
-        #delete_dest_dir()
+        delete_dest_dir()
         print("tearDownClass")      
-
-    '''
-    Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
-    '''
-    @unittest.skip("demonstrating skipping") 
-    def test_PrcId_7(self):
-        print("Validating test result of PrcId_7")
-        # Read from Hive
-        pattern = r'(.{5})(.{2})(.{8})(.{10})(.{7}).*'
-        df_load = self.spark.sql('select * from tested')
-        df_load.show(truncate=False)
-        fields = df_load.select(
-                          regexp_extract('empId', pattern, 1).alias('host'),
-                          regexp_extract('empId', pattern, 2).alias('hosted')
-                          )
-        fields.show(truncate=False)
-        query="select split(regexp_replace(empId, '(.{5})(.{2})(.{8})(.{10})(.{7})(.*)','$1^$2^$3^$4^$5^$6'),'\\\^') from tested"
-        df_l = self.spark.sql(query)
-        df_l.show(truncate=False)
-        
-        df_le = self.spark.sql("select split(regexp_replace(empId, '(.{5})(.{2})(.{8})(.{10})(.{7}).*','$1,$2,$3,$4,$5'), ',') as temp from tested")
-        #using a list comprehension in python
-        collist=[col('temp').getItem(i).alias(f'col{i}') for i in range(5)]
-        print(collist)
-        #tesDf=df_le.select(*(col('temp').getItem(i).alias(f'col{i}') for i in range(5)))
-        tesDf=df_le.select(collist)
-        tesDf.show(truncate=False)
-        tesDf.write.saveAsTable('test')
-        df_l1 = self.spark.sql("select col0 AS firstCol,col1 AS secondCol from test")
-        df_l1.show(truncate=False)
-        #(df.withColumn('temp', split('columnToSplit', '\\.')).select(*(col('temp').getItem(i).alias(f'col{i}') for i in range(3))).show()
-        #retVal=df_load.collect()
-        #print(retVal[0].job)
-        #self.assertEqual("PRESIDENT", retVal[0]['job'])
-
 
 
     '''
@@ -199,43 +97,42 @@ class Test(unittest.TestCase):
     '''
     Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
     '''
-    @unittest.skip("demonstrating skipping")     
-    def test_PrcId_9(self):
+    #@unittest.skip("demonstrating skipping")     
+    def test_PrcId_17(self):
         print("Validating test result of PrcId_9")
         # Read from Hive
-        df_load = self.spark.sql('select empCount from fin_tab_dest9 where loc="CHICAGO"')
-        #df_load.show()
+        df_load = self.spark.sql('select cat_id from fin_tab_dest17 where status="Resolved"')
+        df_load.show()
         retVal=df_load.collect()
-        self.assertEqual(6, retVal[0]['empCount'])
+        self.assertEqual(815681323, retVal[0]['cat_id'])
 
 
 
         
         
-    @unittest.skip("demonstrating skipping")    
-    def test_PrcId_12(self):
-        print("Validating test result of PrcId_12")
-        conn = sqlite3.connect(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE'))
-        cursor = conn.cursor()
-        # Read from JDBC Source
-        resultSet=cursor.execute('select employeeName from Dest_12 where deptName = "ACCOUNTING" and job = "MANAGER"').fetchall()        
-        cursor.close()
-        conn.close()
-        #print(resultSet)
-        self.assertEqual('CLARK', resultSet[0][0])
+    #@unittest.skip("demonstrating skipping")    
+    def test_PrcId_18(self):
+        print("Validating test result of PrcId_18")
+        # Read from Hive
+        df_load = self.spark.sql('select assigned_to from fin_tab_dest18 where status="Assigned"')
+        df_load.show()
+        retVal=df_load.collect()
+        self.assertEqual('Sridar', retVal[0]['assigned_to'])
      
         
           
 
-    @unittest.skip("demonstrating skipping")    
-    def test_PrcId_13(self):
-        print("Validating test result of PrcId_13")
-        observedDF = self.spark.read.json("TestFiles\\TestHiveToHive\\destLoc\\DestId_13_json\\json\\")
-        #obsCount=observedDF.show()
-        filteredData=observedDF.filter('deptName = "ACCOUNTING" and job = "MANAGER"').select("employeeName").collect()
-        #print("The count of records at destination location is :: "+str(obsCount))
-        #print("The count of filtered records is :: "+str(filteredCount))
-        self.assertEqual('CLARK', filteredData[0]['employeeName'])
+    #@unittest.skip("demonstrating skipping")    
+    def test_PrcId_19(self):
+        print("Validating test result of PrcId_19")
+        conn = sqlite3.connect(config.get('DIT_TEST_CASE_config', 'DB_LOC_FXDWDTH_JDBC'))
+        cursor = conn.cursor()
+        # Read from JDBC Source
+        resultSet=cursor.execute('select cnt_status from Dest_19 where status="Open"').fetchall()        
+        cursor.close()
+        conn.close()
+        print(resultSet)
+        self.assertEqual(1, resultSet[0][0])
 
 
 

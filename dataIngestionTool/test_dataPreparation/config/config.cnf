@@ -41,6 +41,6 @@ DB_LOC_JDBC_DERBY = TestFiles/TestJdbcToJdbc/derby
 
 SPARK_CONF_DIR_FXDWDTH = TestFiles/TestFixedWidth/conf
 DEST_LOC_FXDWDTH = TestFiles/TestFixedWidth/destLoc
-DB_LOC_FXDWDTH_JDBC = TestFiles/TestFixedWidth/test.db
+DB_LOC_FXDWDTH_JDBC = TestFiles/TestFixedWidth/fixedWidthtest.db
 DB_LOC_FXDWDTH_WAREHOUSE = TestFiles/TestFixedWidth/warehouse
 DB_LOC_FXDWDTH_DERBY = TestFiles/TestFixedWidth/derby

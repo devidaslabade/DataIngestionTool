@@ -1,0 +1,7 @@
+[
+    { "mapId":"cm_19",
+      "destId": ["DestId_19"],
+      "srcId":["SrcId_3","SrcId_6"],
+      "query":"select s6.status,count(s6.status) as cnt_status from SrcId_6 s6 left outer join SrcId_3 s3 on s6.category_id = s3.category_id group by s6.status"
+      }
+]
