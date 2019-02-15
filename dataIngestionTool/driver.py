@@ -1,7 +1,6 @@
 import sys
 import importlib
 import argparse
-import time
 import datetime
 import traceback
 
@@ -14,14 +13,15 @@ if __name__ == '__main__':
     parser.add_argument('--prcs','-p',type=str, required=True, dest='prcs', help="Regex Expression for fetching specific files ex: (prc__PrcId_(1|21|12)|prc_(PrcId_[4-6])).json -> will fetch files having ids 1,21,12,4,5,6")
     parser.add_argument('--pool',type=int, required=True, dest='pool', help="Parallel thread pool for executing simultaneous Spark DAGs")
     args = parser.parse_args()
-    print ("_____________________DataIngestionTool Execution utility_____________________")
+    print ("_____________________DataIngestionTool Execution utility_____________________")    
+    start = datetime.datetime.now().replace(microsecond=0)
+    print("\n__________________Started processing at ____________"+str(start)+"________________________")
     print("Executing with following arguments\n %s" %args)
-    start = time.time()
     try:
         module = importlib.import_module(args.job_name)
         module.main(args.config,args.prcs,args.pool)
-        end = time.time()
-        print ("\nExecution of job %s took %s seconds" % (args.job_name, end-start))
+        end = datetime.datetime.now().replace(microsecond=0)
+        print ("\n________________________Execution of job %s took %s ______________________________" % (args.job_name, str(end-start)))
     except Exception as e:
         print (str(datetime.datetime.now()) + "____________ Abruptly Exited________________")
         print(traceback.format_exc())

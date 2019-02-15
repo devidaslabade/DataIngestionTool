@@ -585,11 +585,14 @@ def processFiles(argTuple):
         for prcIdx, prcRow in prc[prc['isActive'] == "True"].iterrows():
             key=logKey(argTuple[1], prcRow['prcId'])
             spark_logger = logg.Log4j(argTuple[1],key)
+            startTS=datetime.datetime.now().replace(microsecond=0)
+            publishKafka(producer,spark_logger,key,"INFO","Started processing "+prcRow['prcId']+" at "+str(startTS))
             if prcRow.get('queryProvided') == "True" :
                 executeQuery(argTuple[1], prcRow,key,producer,spark_logger)                
             else :
                 prepareMeta(argTuple[1], prcRow,key,producer,spark_logger)
-                    
+            publishKafka(producer,spark_logger,key,"INFO","Finished processing "+prcRow['prcId']) 
+            publishKafka(producer,spark_logger,key,"INFO","Total time taken to process "+prcRow['prcId']+" is "+ str(datetime.datetime.now().replace(microsecond=0)-startTS))       
     except Exception as e:
             print(str(datetime.datetime.now()) + "____________ Exception occurred in processFiles() ________________")
             print(str(datetime.datetime.now()) + " The exception occured for :: " + argTuple[0])
