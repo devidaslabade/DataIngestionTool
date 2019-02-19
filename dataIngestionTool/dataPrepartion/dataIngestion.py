@@ -134,7 +134,7 @@ def fixedWidthProcessor(src,schemaStruct,spark,key,producer, spark_logger):
     
 
 
-def findMapping(uniqSrc,uniqDest,producer,spark_logger):
+def findMapping(uniqSrc,uniqDest,key,producer,spark_logger):
     try:
         if uniqSrc == 1 and uniqDest == 1:
             return "One_to_One"
@@ -469,7 +469,7 @@ def prepareMeta(sprkSession, prcRow,key,producer,spark_logger):
                 if prcRow.get('filterCondition') is not None:     
                     filterCondition+=prepareFilterCodition(srcDest, prcRow, srcColMap,key,producer,spark_logger)
         #Identify the process mapping     
-        mapping=findMapping(mapTab.srcId.nunique(),mapTab.destId.nunique(),producer,spark_logger)
+        mapping=findMapping(mapTab.srcId.nunique(),mapTab.destId.nunique(),key,producer,spark_logger)
         #Process data 
         processData(sprkSession,mapping, srcMap, schemaMap, destMap, queryMap,joinCondition,filterCondition,key,producer, spark_logger)
     except Exception as e:
@@ -523,7 +523,7 @@ def executeQuery(sprkSession, prcRow,key,producer,spark_logger):
                 #Add Query
                 queryMap[srcDest] =  mapTab['query'] 
         #Identify the process mapping     
-        mapping=findMapping(len(srclst),len(deslst),producer,spark_logger)
+        mapping=findMapping(len(srclst),len(deslst),key,producer,spark_logger)
         #Process data 
         processData(sprkSession,mapping, srcMap, schemaMap, destMap, queryMap,joinCondition,filterCondition,key,producer, spark_logger)
     except Exception as e:
