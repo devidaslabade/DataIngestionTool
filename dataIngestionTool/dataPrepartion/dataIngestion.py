@@ -205,8 +205,8 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,key,
                 else :
                     delimiter=src.get('delimiter').str.cat()
 
-				if src.get('quote') is None :
-					quote="\""
+                if src.get('delimiter') is None :
+                    quote="\""
                 else :
                     quote=src.get('quote').str.cat()
 				
@@ -315,8 +315,8 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
                     delimiter=","
                 else :
                     delimiter=src.get('delimiter').str.cat()
-				
-				if src.get('quote') is None :
+
+                if src.get('quote') is None :
 					quote="\""
                 else :
                     quote=src.get('quote').str.cat()
