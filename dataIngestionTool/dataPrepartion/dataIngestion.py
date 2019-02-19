@@ -204,12 +204,10 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,key,
                     delimiter=","
                 else :
                     delimiter=src.get('delimiter').str.cat()
-
                 if src.get('delimiter') is None :
                     quote="\""
                 else :
                     quote=src.get('quote').str.cat()
-				
                 if src.get('inferSchema') is None or src.get('inferSchema').str.cat().lower() == "false" :
                     df = spark.read.format("csv").schema(schemaMap[srcKey]).option("header", src['header'].any()).option("delimiter", delimiter).option("quote", quote).load(src['srcLocation'].any())
                 else:
@@ -317,10 +315,9 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
                     delimiter=src.get('delimiter').str.cat()
 
                 if src.get('quote') is None :
-					quote="\""
+                    quote="\""
                 else :
                     quote=src.get('quote').str.cat()
-				
                 if src.get('inferSchema') is None or src.get('inferSchema').str.cat().lower() == "false" :
                     df = spark.read.format("csv").schema(schemaMap[srcKey]).option("header", src['header'].any()).option("delimiter", delimiter).option("quote", quote).load(src['srcLocation'].any())
                 else:
