@@ -24,7 +24,7 @@ config.read('config\\config.cnf')
 
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
-        print(module)
+        print("+++++++++++++++++++++Executing Test cases with source as Fixed Width Files+++++++++++++++++++++++")
         #prcs = "(prc_PrcId_1.json|prc_PrcId_19.json)"
         prcs = "(prc_PrcId_16.json|prc_PrcId_17.json|prc_PrcId_18.json|prc_PrcId_19.json)"
         pool = 3
