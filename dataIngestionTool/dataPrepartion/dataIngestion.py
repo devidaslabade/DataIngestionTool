@@ -203,11 +203,17 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,key,
                 if src.get('delimiter') is None :
                     delimiter=","
                 else :
-                    delimiter=src.get('delimiter').str.cat()    
+                    delimiter=src.get('delimiter').str.cat()
+
+				if src.get('quote') is None :
+					quote="\""
+                else :
+                    quote=src.get('quote').str.cat()
+				
                 if src.get('inferSchema') is None or src.get('inferSchema').str.cat().lower() == "false" :
-                    df = spark.read.format("csv").schema(schemaMap[srcKey]).option("header", src['header'].any()).option("delimiter", delimiter).load(src['srcLocation'].any())
+                    df = spark.read.format("csv").schema(schemaMap[srcKey]).option("header", src['header'].any()).option("delimiter", delimiter).option("quote", quote).load(src['srcLocation'].any())
                 else:
-                    df = spark.read.format("csv").option("header", src['header'].any()).option("delimiter", delimiter).option("inferSchema", src.get('inferSchema').str.cat().lower()).load(src['srcLocation'].any())
+                    df = spark.read.format("csv").option("header", src['header'].any()).option("delimiter", delimiter).option("quote", quote).option("inferSchema", src.get('inferSchema').str.cat().lower()).load(src['srcLocation'].any())
             elif src['fileType'].any() == "fixedWidth":
                 publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
                 df=fixedWidthProcessor(src,schemaMap[srcKey],spark,key,producer, spark_logger)
@@ -308,11 +314,17 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
                 if src.get('delimiter') is None :
                     delimiter=","
                 else :
-                    delimiter=src.get('delimiter').str.cat()    
+                    delimiter=src.get('delimiter').str.cat()
+				
+				if src.get('quote') is None :
+					quote="\""
+                else :
+                    quote=src.get('quote').str.cat()
+				
                 if src.get('inferSchema') is None or src.get('inferSchema').str.cat().lower() == "false" :
-                    df = spark.read.format("csv").schema(schemaMap[srcKey]).option("header", src['header'].any()).option("delimiter", delimiter).load(src['srcLocation'].any())
+                    df = spark.read.format("csv").schema(schemaMap[srcKey]).option("header", src['header'].any()).option("delimiter", delimiter).option("quote", quote).load(src['srcLocation'].any())
                 else:
-                    df = spark.read.format("csv").option("header", src['header'].any()).option("delimiter", delimiter).option("inferSchema", src.get('inferSchema').str.cat().lower()).load(src['srcLocation'].any())
+                    df = spark.read.format("csv").option("header", src['header'].any()).option("delimiter", delimiter).option("quote", quote).option("inferSchema", src.get('inferSchema').str.cat().lower()).load(src['srcLocation'].any())
             elif src['fileType'].any() == "fixedWidth":
                 publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
                 df=fixedWidthProcessor(src,schemaMap[srcKey],spark,key,producer, spark_logger)                
