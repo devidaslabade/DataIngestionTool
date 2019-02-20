@@ -40,7 +40,7 @@ For executing jobs using Spark Submit :
 
 cd ~/DataIngestionTool/dataIngestionTool/dataPrepartion
 
-/usr/hdp/current/spark2-client/bin/spark-submit --py-files /home/ec2-user/Utility/DataIngestionTool/dist/findspark-1.3.0-py2.py3-none-any.zip,/home/ec2-user/Utility/DataIngestionTool/dist/kafka-1.3.5-py2.py3-none-any.zip,/home/ec2-user/Utility/DataIngestionTool/dist/configparser-3.7.1-py2-none-any.zip,/home/ec2-user/Utility/DataIngestionTool/dist/dataIngestionTool-0.1-py2.py3-none-any.zip driver.py --job=dataPrepartion.dataIngestion --configLoc=/home/ec2-user/Utility/config/config.cnf --prcs="prc_PrcId_[0-1].json" --pool=3
+/usr/hdp/current/spark2-client/bin/spark-submit --master yarn --deploy-mode client --jars /usr/share/java/mysql-connector-java.jar --py-files /home/ec2-user/Utility/DataIngestionTool/dist/findspark-1.3.0-py2.py3-none-any.zip,/home/ec2-user/Utility/DataIngestionTool/dist/kafka-1.3.5-py2.py3-none-any.zip,/home/ec2-user/Utility/DataIngestionTool/dist/configparser-3.7.1-py2-none-any.zip,/home/ec2-user/Utility/DataIngestionTool/dist/dataIngestionTool-0.1-py2.py3-none-any.zip driver.py --job=dataPrepartion.dataIngestion --configLoc=/home/ec2-user/Utility/config/config.cnf --prcs="prc_PrcId_[0-1].json" --pool=3
 
 
 ### Supported Data Sources
