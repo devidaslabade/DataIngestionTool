@@ -1,0 +1,3 @@
+[
+{"srcId":"SrcId_21","srcType":"local","srcLocation":"TestFiles/TestCsvToCsv/category_delimiter.csv","fileType":"csv","inferSchema":"false","header":"false","delimiter":"\u00BF"}
+]

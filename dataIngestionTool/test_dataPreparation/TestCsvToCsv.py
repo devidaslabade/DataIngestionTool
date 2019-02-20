@@ -23,8 +23,8 @@ config.read('config/config.cnf')
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print("+++++++++++++++++++++Executing Test cases with source as Delimited Text +++++++++++++++++++++++")
-        prcs = "(prc_PrcId_1.json|prc_PrcId_2.json|prc_PrcId_3.json|prc_PrcId_10.json|prc_PrcId_11.json|prc_PrcId_20.json)"
-        #prcs = "(prc_PrcId_1.json)"
+        #prcs = "(prc_PrcId_1.json|prc_PrcId_2.json|prc_PrcId_3.json|prc_PrcId_10.json|prc_PrcId_11.json|prc_PrcId_20.json)"
+        prcs = "(prc_PrcId_21.json)"
         pool = 3
         module.main('config/config.cnf', prcs, pool)
         
@@ -176,8 +176,13 @@ class Test(unittest.TestCase):
         print("Final value::"+str(tFlag))
         self.assertTrue(tFlag)
 
-
-
+    # @unittest.skip("demonstrating skipping")
+    def test_PrcId_21(self):
+        print("Validating test result of PrcId_21")
+        observedDF = self.spark.read.json(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_21_json/json/")
+        filteredCount = observedDF.count()
+        print("The count of filtered records is :: " + str(filteredCount))
+        self.assertEqual(4, filteredCount)
 
 
 if __name__ == '__main__':
