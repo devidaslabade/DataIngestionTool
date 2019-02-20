@@ -144,6 +144,16 @@ class Test(unittest.TestCase):
         print(resultSet)
         self.assertEqual('Soccer', resultSet[0][0])
 
+    #@unittest.skip("demonstrating skipping")
+    def test_PrcId_12(self):
+        print("Validating test result of PrcId_12")
+        observedDF = self.spark.read.json(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_1_json/json/")
+        obsCount = observedDF.count()
+        filteredCount = observedDF.filter("cat_dpt_id = '2_X_Y_Z' and dept_name = 'Fitness' ").count()
+        print("The count of records at destination location is :: " + str(obsCount))
+        print("The count of filtered records is :: " + str(filteredCount))
+        self.assertEqual(obsCount, filteredCount)
+
 
 
 
