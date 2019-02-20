@@ -1,0 +1,3 @@
+[
+{"srcId":"SrcId_20","srcType":"local","srcLocation":"TestFiles/TestCsvToCsv/category_quote.csv","fileType":"csv","inferSchema":"false","header":"true","quote":"?"}
+]

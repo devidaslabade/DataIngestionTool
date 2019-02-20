@@ -21,6 +21,7 @@ LOG_DIR=C:/Users/sk250102/Documents/Teradata/DIT/DataIngestionTool/test_dataInge
 [DIT_TEST_CASE_config]
 SPARK_CONF_DIR_CSV = TestFiles/TestCsvToCsv/conf
 DEST_LOC_CSV = TestFiles/TestCsvToCsv/destLoc/
+    SRC_LOC_CSV = TestFiles/TestCsvToCsv/category_quote.csv
 DB_LOC_CSV_JDBC = TestFiles/TestCsvToCsv/csvtest.db
 DB_LOC_CSV_WAREHOUSE = TestFiles/TestCsvToCsv/warehouse
 DB_LOC_CSV_DERBY = TestFiles/TestCsvToCsv/derby
