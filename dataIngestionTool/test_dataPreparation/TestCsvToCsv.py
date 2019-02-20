@@ -65,7 +65,7 @@ class Test(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.spark.stop()
-        #delete_dest_dir()
+        delete_dest_dir()
         print("tearDownClass")      
 
     '''
