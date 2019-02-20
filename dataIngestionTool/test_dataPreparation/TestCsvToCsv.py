@@ -7,7 +7,9 @@ import sqlite3
 import warnings
 import importlib
 import shutil
+from pathlib import Path
 from configparser import ConfigParser
+from pyspark.sql.functions import col
 
 try:
     import pyspark
@@ -21,8 +23,8 @@ config.read('config/config.cnf')
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print("+++++++++++++++++++++Executing Test cases with source as Delimited Text +++++++++++++++++++++++")
-        prcs = "(prc_PrcId_1.json|prc_PrcId_2.json|prc_PrcId_3.json|prc_PrcId_10.json|prc_PrcId_11.json)"
-        #prcs = "(prc_PrcId_2.json)"
+        #prcs = "(prc_PrcId_1.json|prc_PrcId_2.json|prc_PrcId_3.json|prc_PrcId_10.json|prc_PrcId_11.json)"
+        prcs = "(prc_PrcId_20.json)"
         pool = 3
         module.main('config/config.cnf', prcs, pool)
         
@@ -51,10 +53,10 @@ class Test(unittest.TestCase):
         delete_dest_dir()
         #TestFiles\\TestCsvToCsv\\destLoc\\
         execute_valid_process()
-
+        print("hi")
+        print(str(Path.cwd()))
         cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Csv_To_Csv").enableHiveSupport().getOrCreate()
-  
-    
+
     def setUp(self):
         print("setup")     
 
@@ -65,7 +67,7 @@ class Test(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.spark.stop()
-        delete_dest_dir()
+        #delete_dest_dir()
         print("tearDownClass")      
 
     '''
@@ -145,14 +147,34 @@ class Test(unittest.TestCase):
         self.assertEqual('Soccer', resultSet[0][0])
 
     #@unittest.skip("demonstrating skipping")
-    def test_PrcId_12(self):
-        print("Validating test result of PrcId_12")
-        observedDF = self.spark.read.json(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_1_json/json/")
-        obsCount = observedDF.count()
-        filteredCount = observedDF.filter("cat_dpt_id = '2_X_Y_Z' and dept_name = 'Fitness' ").count()
-        print("The count of records at destination location is :: " + str(obsCount))
-        print("The count of filtered records is :: " + str(filteredCount))
-        self.assertEqual(obsCount, filteredCount)
+    def test_PrcId_20(self):
+        print("Validating test result of PrcId_20")
+        flag = False
+        sFlag = False
+        tFlag = False
+        observedDF = self.spark.read.json(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_20_json/json/")
+        srcDF = self.spark.read.format("csv").option("header","true").option("inferSchema","true").option("quote","?").load(config.get('DIT_TEST_CASE_config', 'SRC_LOC_CSV'))
+
+        joinDF = observedDF.join(srcDF, observedDF.cat_id == srcDF.c0).select(observedDF.cat_name, srcDF.c2)
+        print(joinDF.show())
+        #Second scenario testing
+        resDF = joinDF.filter("cat_name != c2")
+        if (resDF.count() == 0):
+            flag = True
+        print("The count of filtered records is :: " + str(resDF.count()))
+
+        value = observedDF.filter("cat_id = 5 and cat_name = 'Lacrosse,123'")
+        print(value.count())
+        if(value.count() == 1):
+            sflag = True
+
+        print("flag value::" + str(flag))
+        print("sflag value::" + str(sflag))
+        if(flag and sflag):
+            tFlag = True
+            print("Inside")
+        print("Final value::"+str(tFlag))
+        self.assertTrue(tFlag)
 
 
 
