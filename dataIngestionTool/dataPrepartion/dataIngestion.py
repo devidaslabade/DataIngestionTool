@@ -273,7 +273,7 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,part
                         .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest["fileType"].any())
                     else :
                         print(partitionByMap)
-                        dfWrite.coalesce(numPartitions).write.partitionBy(dest.get('partitionBy').str.cat())\
+                        dfWrite.coalesce(numPartitions).write.partitionBy(partitionByMap[destKey])\
                         .mode(dest["mode"].any()).format(dest["fileType"].any())\
                         .option("compression",compression)\
                         .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest["fileType"].any())
@@ -283,13 +283,23 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,part
                     #df.selectExpr(queryMap[destKey]).show(truncate=False)
                 elif dest['fileType'].any() == "hivetable":
                     publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " having table name : "+dest["table"].any())
-                    dfWrite.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
+                    if dest.get('partitionBy') is None :
+                        dfWrite.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
+                    else :
+                        dfWrite.write.partitionBy(partitionByMap[destKey]).mode(dest["mode"].any()).saveAsTable(dest["table"].any())  
                 elif dest['fileType'].any() == "jdbcclient":
                     publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " having table name : "+dest["table"].any())
-                    dfWrite.coalesce(numPartitions).write.format("jdbc").mode(dest["mode"].any())\
+                    if dest.get('partitionBy') is None :
+                        dfWrite.coalesce(numPartitions).write.format("jdbc").mode(dest["mode"].any())\
                         .option("url", dest["url"].any()).option("driver", dest["driver"].any())\
                         .option("dbtable",dest["table"].any()).option("user",dest["user"].any())\
                         .option("password", dest["password"].any()).save()
+                    else :
+                        dfWrite.coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]).format("jdbc").mode(dest["mode"].any())\
+                        .option("url", dest["url"].any()).option("driver", dest["driver"].any())\
+                        .option("dbtable",dest["table"].any()).option("user",dest["user"].any())\
+                        .option("password", dest["password"].any()).save()
+                            
                 elif dest['fileType'].any() == "DataBase":
                     print("TEST107c::")
                     prepareTPTScript(spark,srcMap, schemaMap, destMap, queryMap, producer,spark_logger)
@@ -400,13 +410,22 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
                     #spark.sql(query[0:-1]+joinCondition+filterCondition).show(truncate=False)
                 elif dest['fileType'].any() == "hivetable":
                     publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " having table name : "+dest["table"].any())
-                    dfWrite.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
+                    if dest.get('partitionBy') is None :
+                        dfWrite.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
+                    else :
+                        dfWrite.write.partitionBy(partitionByMap[destKey]).mode(dest["mode"].any()).saveAsTable(dest["table"].any())    
                 elif dest['fileType'].any() == "jdbcclient":
                     publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " having table name : "+dest["table"].any())
-                    dfWrite.coalesce(numPartitions).write.format("jdbc").mode(dest["mode"].any())\
+                    if dest.get('partitionBy') is None :
+                        dfWrite.coalesce(numPartitions).write.format("jdbc").mode(dest["mode"].any())\
                         .option("url", dest["url"].any()).option("driver", dest["driver"].any())\
                         .option("dbtable",dest["table"].any()).option("user",dest["user"].any())\
                         .option("password", dest["password"].any()).save()
+                    else :
+                        dfWrite.coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]).format("jdbc").mode(dest["mode"].any())\
+                        .option("url", dest["url"].any()).option("driver", dest["driver"].any())\
+                        .option("dbtable",dest["table"].any()).option("user",dest["user"].any())\
+                        .option("password", dest["password"].any()).save()                            
                 elif dest['fileType'].any() == "DataBase":
                     print("TEST107c::")
                     prepareTPTScript(spark,srcMap, schemaMap, destMap, queryMap,producer, spark_logger)   
@@ -507,6 +526,7 @@ def executeQuery(sprkSession, prcRow,key,producer,spark_logger):
         schemaMap = {}
         srcMap = {}
         destMap = {}
+        partitionByMap={}
         #joinCondition=" from {tab1} inner join {tab2} on {col1} = {col2}"
         joinCondition="NA"
         filterCondition= "NA"
@@ -541,10 +561,18 @@ def executeQuery(sprkSession, prcRow,key,producer,spark_logger):
                 destMap[srcDest] = dest[dest['destId'] == row[1]]
                 #Add Query
                 queryMap[srcDest] =  mapTab['query'] 
+                # Add partition info
+                if dest.get('partitionBy') is None :
+                    partitionByMap[srcDest] = "NA"
+                else :
+                    partCol = destColMap[(destColMap['destId'] == dest.get('partitionBy').str.cat().split(":")[0]) & (destColMap['colId'] == int(dest.get('partitionBy').str.cat().split(":")[1]))]
+                    partitionByMap[srcDest] =  partCol['colName'].str.cat()  
+                    print(partCol) 
+                    print(partitionByMap)
         #Identify the process mapping     
         mapping=findMapping(len(srclst),len(deslst),producer,spark_logger)
         #Process data 
-        processData(sprkSession,mapping, srcMap, schemaMap, destMap, queryMap,joinCondition,filterCondition,key,producer, spark_logger)
+        processData(sprkSession,mapping, srcMap, schemaMap, destMap, queryMap,joinCondition,filterCondition,partitionByMap,key,producer, spark_logger)
     except Exception as e:
         publishKafka(producer,spark_logger,key,"ERROR","Exception occurred in executeQuery()")
         publishKafka(producer,spark_logger,key,"ERROR"," The exception occurred for process ID :: " + prcRow['prcId'])
