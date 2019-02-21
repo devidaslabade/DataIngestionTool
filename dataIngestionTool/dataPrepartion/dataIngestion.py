@@ -266,20 +266,44 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,part
  
                 
                 dfWrite=spark.sql("select "+','.join(queryMap[destKey])+" from "+destKey.split(":")[0]+filterCondition)    
-                    
-                if dest['fileType'].any() == "csv" or dest['fileType'].any() == "json" or dest[
-                    'fileType'].any() == "orc" or dest['fileType'].any() == "parquet":
+                if dest['fileType'].any() == "json" or dest['fileType'].any() == "orc" or dest['fileType'].any() == "parquet" :
+                    publishKafka(producer, spark_logger, key, "INFO","Publishing data in fromat : " + dest['fileType'].any() + " in mode :" + dest["mode"].any() + " at " + dest["destLocation"].any() + dest["destId"].any() + "_" +
+                                 dest["fileType"].any() + "/" + dest[
+                                     "fileType"].any())
+                    if dest.get('partitionBy') is None:
+                        dfWrite.coalesce(numPartitions).write.mode(dest["mode"].any()).format(dest["fileType"].any()) \
+                            .option("compression", compression) \
+                            .save(
+                            dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                            dest["fileType"].any())
+                    else:
+                        print(partitionByMap)
+                        dfWrite.coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]) \
+                            .mode(dest["mode"].any()).format(dest["fileType"].any()) \
+                            .option("compression", compression) \
+                            .save(
+                            dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                            dest["fileType"].any())
+                elif dest['fileType'].any() == "csv" or dest['fileType'].any() == 'delimited':
                     publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " at "+dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
                                 "fileType"].any())
+                    if dest.get('delimiter') is None :
+                        delimiter=","
+                    else :
+                        delimiter=dest.get('delimiter').str.cat()
+                    if dest.get('quote') is None :
+                        quote="\""
+                    else :
+                        quote=dest.get('quote').str.cat()
                     if dest.get('partitionBy') is None :
                         dfWrite.coalesce(numPartitions).write.mode(dest["mode"].any()).format(dest["fileType"].any())\
-                        .option("compression",compression)\
+                        .option("compression",compression).option("header", dest['header'].any()).option("delimiter", delimiter).option("quote", quote)\
                         .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest["fileType"].any())
                     else :
                         print(partitionByMap)
                         dfWrite.coalesce(numPartitions).write.partitionBy(partitionByMap[destKey])\
                         .mode(dest["mode"].any()).format(dest["fileType"].any())\
-                        .option("compression",compression)\
+                        .option("compression",compression).option("header", dest['header'].any()).option("delimiter", delimiter).option("quote", quote)\
                         .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest["fileType"].any())
                             
                     
@@ -402,17 +426,45 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
             print(partitionByMap[destKey])     
             try:
                 publishKafka(producer,spark_logger,key,"INFO",":::::Executing Query::::::"+queryExpr)
-                dfWrite=spark.sql(queryExpr)                
-                if dest['fileType'].any() == "csv" or dest['fileType'].any() == "json" or dest['fileType'].any() == "orc" or dest['fileType'].any() == "parquet":
+                dfWrite=spark.sql(queryExpr)
+                if dest['fileType'].any() == "json" or dest['fileType'].any() == "orc" or dest['fileType'].any() == "parquet":
+                    publishKafka(producer, spark_logger, key, "INFO","Publishing data in fromat : " + dest['fileType'].any() + " in mode :" + dest["mode"].any() + " at " + dest["destLocation"].any() + dest["destId"].any() + "_" +
+                                 dest["fileType"].any() + "/" + dest[
+                                     "fileType"].any())
+                    if dest.get('partitionBy') is None:
+                        dfWrite.coalesce(numPartitions).write.mode(dest["mode"].any()).format(dest["fileType"].any()) \
+                            .option("compression", compression) \
+                            .save(
+                            dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                            dest["fileType"].any())
+                    else:
+                        dfWrite.coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]).mode(
+                            dest["mode"].any()).format(dest["fileType"].any()) \
+                            .option("compression", compression) \
+                            .save(
+                            dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                            dest["fileType"].any())
+
+                    dfWrite.show(truncate=False)
+                    # spark.sql(query[0:-1]+joinCondition+filterCondition).show(truncate=False)
+                elif dest['fileType'].any() == "csv" or dest['fileType'].any() == "delimited":
                     publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " at "+dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
                                 "fileType"].any())
+                    if dest.get('delimiter') is None :
+                        delimiter=","
+                    else :
+                        delimiter=dest.get('delimiter').str.cat()
+                    if dest.get('quote') is None :
+                        quote="\""
+                    else :
+                        quote=dest.get('quote').str.cat()
                     if dest.get('partitionBy') is None :
                         dfWrite.coalesce(numPartitions).write.mode(dest["mode"].any()).format(dest["fileType"].any())\
-                        .option("compression",compression)\
+                        .option("compression",compression).option("header", dest['header'].any()).option("delimiter", delimiter).option("quote", quote)\
                         .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest["fileType"].any())  
                     else :
                         dfWrite.coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]).mode(dest["mode"].any()).format(dest["fileType"].any())\
-                        .option("compression",compression)\
+                        .option("compression",compression).option("header", dest['header'].any()).option("delimiter", delimiter).option("quote", quote)\
                         .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest["fileType"].any())      
                     
                     dfWrite.show(truncate=False)                 
