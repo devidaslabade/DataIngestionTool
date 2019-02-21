@@ -14,6 +14,12 @@ except:
     import custlogger as logg
 
 try:
+    import dataPrepartion.commonUtil as comUtil
+except:
+    import commonUtil as comUtil
+
+
+try:
     import pyspark
 except:
     import findspark
@@ -127,10 +133,10 @@ def fixedWidthProcessor(src,schemaStruct,spark,key,producer, spark_logger):
         finDf=splitColDf.selectExpr(collst)
         return finDf
     except Exception as e:
-        publishKafka(producer,spark_logger,key,"ERROR","Exception occurred in fixedWidthProcessor()")
-        publishKafka(producer,spark_logger,key,"ERROR"," The iteration key is :: " + src['srcId'].any())
-        publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
-        publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in fixedWidthProcessor()")
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The iteration key is :: " + src['srcId'].any())
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(e))
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())
     
 
 
@@ -145,10 +151,10 @@ def findMapping(uniqSrc,uniqDest,key,producer,spark_logger):
         elif uniqSrc > 1 and uniqDest > 1:
             return "Many_to_Many"
     except Exception as e:
-        publishKafka(producer,spark_logger,key,"ERROR","Exception occurred in findMapping()")
-        publishKafka(producer,spark_logger,key,"ERROR"," The exception occurred for :: " + uniqSrc+" :: "+uniqDest)
-        publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
-        publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in findMapping()")
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The exception occurred for :: " + uniqSrc+" :: "+uniqDest)
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(e))
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())
         
         
 def prepareJoinCodition(joinCondition,srcDest,prcRow,srcColMap,key,producer,spark_logger):
@@ -165,16 +171,16 @@ def prepareJoinCodition(joinCondition,srcDest,prcRow,srcColMap,key,producer,spar
                     joinCondition=joinCondition.format(tab = srcDest.split(":")[0], col = srcDest.split(":")[0]+"."+srcCol['colName'].str.cat())
         return joinCondition            
     except Exception as e:
-        publishKafka(producer,spark_logger,key,"ERROR","Exception occurred in prepareJoinCodition()")
-        publishKafka(producer,spark_logger,key,"ERROR"," The iteration key is :: " + srcDest)
-        publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
-        publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in prepareJoinCodition()")
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The iteration key is :: " + srcDest)
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(e))
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())
          
 
 
 def prepareFilterCodition(srcDest,prcRow,srcColMap,key,producer,spark_logger):
     try:
-        publishKafka(producer,spark_logger,key,"INFO","Processing filter condition for "+srcDest)
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Processing filter condition for "+srcDest)
         for row in prcRow['filterCondition'].split("@") :
             if srcDest.split(":")[0] in row.split(":")[0] :
                 #Fetch the column details from src col mapping having same srcID and ColID
@@ -183,23 +189,23 @@ def prepareFilterCodition(srcDest,prcRow,srcColMap,key,producer,spark_logger):
             else :
                 return ""            
     except Exception as e:
-        publishKafka(producer,spark_logger,key,"ERROR","Exception occurred in prepareFilterCodition()")
-        publishKafka(producer,spark_logger,key,"ERROR"," The iteration key is :: " + srcDest)
-        publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
-        publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in prepareFilterCodition()")
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The iteration key is :: " + srcDest)
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(e))
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())
 
 
                         
 def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,partitionByMap,key,producer, spark_logger):
     for srcKey, src in srcMap.items():
         try:
-            publishKafka(producer,spark_logger,key,"INFO","The processing singleSrcPrc() process for " + srcKey)
+            comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","The processing singleSrcPrc() process for " + srcKey)
             if  src['fileType'].any() == "json" or src['fileType'].any() == "parquet" or src['fileType'].any() == "orc":
-                publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
+                comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
                 df = spark.read.format(src['fileType'].any()).schema(schemaMap[srcKey]).load(src['srcLocation'].any())
                 #.option("inferSchema", src.get('inferSchema').str.cat().lower()) Not required
             elif src['fileType'].any() == "csv" or src['fileType'].any() == "delimited":
-                publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
+                comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
                 if src.get('delimiter') is None :
                     delimiter=","
                 else :
@@ -213,11 +219,11 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,part
                 else:
                     df = spark.read.format("csv").option("header", src['header'].any()).option("delimiter", delimiter).option("quote", quote).option("inferSchema", src.get('inferSchema').str.cat().lower()).load(src['srcLocation'].any())
             elif src['fileType'].any() == "fixedWidth":
-                publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
+                comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
                 df=fixedWidthProcessor(src,schemaMap[srcKey],spark,key,producer, spark_logger)
                 df.show(truncate=False)
             elif src['fileType'].any() == "hivetable":
-                publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from table "+src["table"].any())
+                comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from table "+src["table"].any())
                 ##TODO fieldNames() will be available in verions 2.3.0 onwards ( https://jira.apache.org/jira/browse/SPARK-20090)
                 #colName = ','.join(schemaMap[srcKey].fieldNames())
                 #Using alternate approach to fieldNames() until then
@@ -229,7 +235,7 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,part
                 df = spark.sql('SELECT ' + colName + ' FROM ' + src["table"].any())
                 print("read from table" + src["table"].any())
             elif src['fileType'].any() == "jdbcclient":
-                publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from table "+src["table"].any())
+                comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from table "+src["table"].any())
                 df = spark.read.format("jdbc").option("url", src["url"].any()).option("driver",src["driver"].any()).option("dbtable", src["table"].any()).option("user", src["user"].any()).option("password", src["password"].any()).load()
             #df.show()
             #df.printSchema()  
@@ -239,12 +245,12 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,part
             srcJsons=[]
             for dfele in srcSummary:
                 srcJsons.append(json.loads(dfele))
-            publishKafka(producer,spark_logger,key,"INFO","The summary of source "+srcKey.split(":")[0]+" is : " + json.dumps(srcJsons))
+            comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","The summary of source "+srcKey.split(":")[0]+" is : " + json.dumps(srcJsons))
         except Exception as e:
-            publishKafka(producer,spark_logger,key,"ERROR","Exception occurred in singleSrcPrc()")
-            publishKafka(producer,spark_logger,key,"ERROR"," The iteration key for srcMap is :: " + srcKey)
-            publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
-            publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
+            comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in singleSrcPrc()")
+            comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The iteration key for srcMap is :: " + srcKey)
+            comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(e))
+            comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())
 
             
         for destKey, dest in destMap.items():
@@ -269,7 +275,7 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,part
                     
                 if dest['fileType'].any() == "csv" or dest['fileType'].any() == "json" or dest[
                     'fileType'].any() == "orc" or dest['fileType'].any() == "parquet":
-                    publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " at "+dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
+                    comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " at "+dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
                                 "fileType"].any())
                     if dest.get('partitionBy') is None :
                         dfWrite.coalesce(numPartitions).write.mode(dest["mode"].any()).format(dest["fileType"].any())\
@@ -286,13 +292,13 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,part
                     #spark.sql("select "+','.join(queryMap[destKey])+" from "+destKey.split(":")[0]+filterCondition).show(truncate=False)
                     #df.selectExpr(queryMap[destKey]).show(truncate=False)
                 elif dest['fileType'].any() == "hivetable":
-                    publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " having table name : "+dest["table"].any())
+                    comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " having table name : "+dest["table"].any())
                     if dest.get('partitionBy') is None :
                         dfWrite.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
                     else :
                         dfWrite.write.partitionBy(partitionByMap[destKey]).mode(dest["mode"].any()).saveAsTable(dest["table"].any())  
                 elif dest['fileType'].any() == "jdbcclient":
-                    publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " having table name : "+dest["table"].any())
+                    comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " having table name : "+dest["table"].any())
                     if dest.get('partitionBy') is None :
                         dfWrite.coalesce(numPartitions).write.format("jdbc").mode(dest["mode"].any())\
                         .option("url", dest["url"].any()).option("driver", dest["driver"].any())\
@@ -313,24 +319,24 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,part
                 destJsons=[]
                 for dfele in destSummary:
                     destJsons.append(json.loads(dfele))
-                publishKafka(producer,spark_logger,key,"INFO","The summary of destination data set "+destKey.split(":")[1]+" is : " + json.dumps(destJsons))
+                comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","The summary of destination data set "+destKey.split(":")[1]+" is : " + json.dumps(destJsons))
             except Exception as e:
-                publishKafka(producer,spark_logger,key,"ERROR","Exception occurred in singleSrcPrc()")
-                publishKafka(producer,spark_logger,key,"ERROR"," The iteration key for target Map is :: " + destKey)
-                publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
-                publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
+                comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in singleSrcPrc()")
+                comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The iteration key for target Map is :: " + destKey)
+                comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(e))
+                comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())
 
     
 def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterCondition,partitionByMap,key, producer,spark_logger):
     for srcKey, src in srcMap.items():
-        publishKafka(producer,spark_logger,key,"INFO","In multiSrcPrc() method processing for Src Id " + srcKey)
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","In multiSrcPrc() method processing for Src Id " + srcKey)
         try:
             if  src['fileType'].any() == "json" or src['fileType'].any() == "parquet" or src['fileType'].any() == "orc":
-                publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
+                comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
                 df = spark.read.format(src['fileType'].any()).schema(schemaMap[srcKey]).load(src['srcLocation'].any())
                 #.option("inferSchema", src.get('inferSchema').str.cat().lower()) Not required
             elif src['fileType'].any() == "csv" or src['fileType'].any() == "delimited":
-                publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
+                comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
                 if src.get('delimiter') is None :
                     delimiter=","
                 else :
@@ -345,11 +351,11 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
                 else:
                     df = spark.read.format("csv").option("header", src['header'].any()).option("delimiter", delimiter).option("quote", quote).option("inferSchema", src.get('inferSchema').str.cat().lower()).load(src['srcLocation'].any())
             elif src['fileType'].any() == "fixedWidth":
-                publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
+                comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
                 df=fixedWidthProcessor(src,schemaMap[srcKey],spark,key,producer, spark_logger)                
                 df.show(truncate=False)
             elif src['fileType'].any() == "hivetable":
-                publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from table "+src["table"].any())
+                comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from table "+src["table"].any())
                 ##TODO fieldNames() will be available in verions 2.3.0 onwards ( https://jira.apache.org/jira/browse/SPARK-20090)
                 #colName = ','.join(schemaMap[srcKey].fieldNames())
                 #Using alternate approach to fieldNames() until then
@@ -360,16 +366,16 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
                 ## Comment the above line till fldNames and uncomment the previous approach in future releases.
                 df = spark.sql('SELECT ' + colName + ' FROM ' + src["table"].any())
             elif src['fileType'].any() == "jdbcclient":
-                publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from table "+src["table"].any())
+                comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from table "+src["table"].any())
                 df = spark.read.format("jdbc").option("url", src["url"].any()).option("driver",src["driver"].any()).option("dbtable", src["table"].any()).option("user", src["user"].any()).option("password", src["password"].any()).load()
             df.show()
             df.printSchema()  
             df.createOrReplaceTempView(srcKey.split(":")[0])
         except Exception as e:
-            publishKafka(producer,spark_logger,key,"ERROR","Exception occurred in multiSrcPrc()")
-            publishKafka(producer,spark_logger,key,"ERROR"," The iteration key for srcMap is :: " + srcKey)
-            publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
-            publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
+            comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in multiSrcPrc()")
+            comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The iteration key for srcMap is :: " + srcKey)
+            comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(e))
+            comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())
             
     queryExpr=""
     #List to keep track of unique destination for publishing
@@ -388,7 +394,7 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
     for destKey, dest in destMap.items():
         if destKey.split(":")[1] not in distinctDest :
             distinctDest.append(destKey.split(":")[1])
-            publishKafka(producer,spark_logger,key,"INFO","Publishing the records for Dest Id :: "+destKey.split(":")[1])
+            comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Publishing the records for Dest Id :: "+destKey.split(":")[1])
             #Fetch value of compression
             if dest.get('compression') is None :
                 compression="none"
@@ -401,10 +407,10 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
                 numPartitions=dest.get('numPartitions')[0].item()
             print(partitionByMap[destKey])     
             try:
-                publishKafka(producer,spark_logger,key,"INFO",":::::Executing Query::::::"+queryExpr)
+                comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO",":::::Executing Query::::::"+queryExpr)
                 dfWrite=spark.sql(queryExpr)                
                 if dest['fileType'].any() == "csv" or dest['fileType'].any() == "json" or dest['fileType'].any() == "orc" or dest['fileType'].any() == "parquet":
-                    publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " at "+dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
+                    comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " at "+dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
                                 "fileType"].any())
                     if dest.get('partitionBy') is None :
                         dfWrite.coalesce(numPartitions).write.mode(dest["mode"].any()).format(dest["fileType"].any())\
@@ -418,13 +424,13 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
                     dfWrite.show(truncate=False)                 
                     #spark.sql(query[0:-1]+joinCondition+filterCondition).show(truncate=False)
                 elif dest['fileType'].any() == "hivetable":
-                    publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " having table name : "+dest["table"].any())
+                    comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " having table name : "+dest["table"].any())
                     if dest.get('partitionBy') is None :
                         dfWrite.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
                     else :
                         dfWrite.write.partitionBy(partitionByMap[destKey]).mode(dest["mode"].any()).saveAsTable(dest["table"].any())    
                 elif dest['fileType'].any() == "jdbcclient":
-                    publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " having table name : "+dest["table"].any())
+                    comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " having table name : "+dest["table"].any())
                     if dest.get('partitionBy') is None :
                         dfWrite.coalesce(numPartitions).write.format("jdbc").mode(dest["mode"].any())\
                         .option("url", dest["url"].any()).option("driver", dest["driver"].any())\
@@ -440,12 +446,12 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
                     prepareTPTScript(spark,srcMap, schemaMap, destMap, queryMap,producer, spark_logger)   
                          
             except Exception as e:
-                publishKafka(producer,spark_logger,key,"ERROR","Exception occurred in multiSrcPrc()")
-                publishKafka(producer,spark_logger,key,"ERROR"," The iteration key for target Map is :: " + destKey)
-                publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
-                publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
+                comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in multiSrcPrc()")
+                comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The iteration key for target Map is :: " + destKey)
+                comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(e))
+                comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())
         
-        publishKafka(producer,spark_logger,key,"INFO","Published the records for Dest Ids :: "+' '.join(distinctDest))
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Published the records for Dest Ids :: "+' '.join(distinctDest))
         
 def prepareMeta(sprkSession, prcRow,key,producer,spark_logger):
     possibleError=""
@@ -453,7 +459,7 @@ def prepareMeta(sprkSession, prcRow,key,producer,spark_logger):
     #spark_logger = logg.Log4j(sprkSession,key)
     #spark_logger.warn("_________________Started processing process Id : " + prcRow['prcId'] + " : ____________________")
     try:
-        #publishKafka(producer,spark_logger,key,"INFO","Started processing process Id : "+prcRow['prcId'])
+        #comUtil.publishKafka(producer,spark_logger,key,"INFO","Started processing process Id : "+prcRow['prcId'])
         queryMap = {}
         schemaMap = {}
         srcMap = {}
@@ -520,17 +526,17 @@ def prepareMeta(sprkSession, prcRow,key,producer,spark_logger):
         #Process data 
         processData(sprkSession,mapping, srcMap, schemaMap, destMap, queryMap,joinCondition,filterCondition,partitionByMap,key,producer, spark_logger)
     except Exception as e:
-        publishKafka(producer,spark_logger,key,"ERROR","Exception occurred in prepareMeta()")
-        publishKafka(producer,spark_logger,key,"ERROR"," The exception occurred for process ID :: " + prcRow['prcId'])
-        publishKafka(producer,spark_logger,key,"ERROR"," The possible errors can be "+possibleError)
-        publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
-        publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in prepareMeta()")
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The exception occurred for process ID :: " + prcRow['prcId'])
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The possible errors can be "+possibleError)
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(e))
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())
 
 
 def executeQuery(sprkSession, prcRow,key,producer,spark_logger):
     possibleError=""
     try:
-        publishKafka(producer,spark_logger,key,"INFO","Started processing process Id : "+prcRow['prcId'] + " with SQL query provided")
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Started processing process Id : "+prcRow['prcId'] + " with SQL query provided")
         queryMap = {}
         schemaMap = {}
         srcMap = {}
@@ -583,16 +589,16 @@ def executeQuery(sprkSession, prcRow,key,producer,spark_logger):
         #Process data 
         processData(sprkSession,mapping, srcMap, schemaMap, destMap, queryMap,joinCondition,filterCondition,partitionByMap,key,producer, spark_logger)
     except Exception as e:
-        publishKafka(producer,spark_logger,key,"ERROR","Exception occurred in executeQuery()")
-        publishKafka(producer,spark_logger,key,"ERROR"," The exception occurred for process ID :: " + prcRow['prcId'])
-        publishKafka(producer,spark_logger,key,"ERROR"," The possible errors can be "+possibleError)
-        publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
-        publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in executeQuery()")
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The exception occurred for process ID :: " + prcRow['prcId'])
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The possible errors can be "+possibleError)
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(e))
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())
 
                 
 def fetchSchema(srcCols,key, producer,spark_logger):
     try:
-        publishKafka(producer,spark_logger,key,"INFO","Fetching schema values for SRC Id " + srcCols['srcId'].any())
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Fetching schema values for SRC Id " + srcCols['srcId'].any())
         fields = []
         for idx, clm in srcCols.iterrows():
             colPos= clm.get('colPos') if clm.get('colPos') is not None else "NA"
@@ -623,15 +629,15 @@ def fetchSchema(srcCols,key, producer,spark_logger):
                 fields.append(colField)
         return fields
     except Exception as e:
-        publishKafka(producer,spark_logger,key,"ERROR","Exception occurred in fetchSchema()")
-        publishKafka(producer,spark_logger,key,"ERROR"," The exception occurred for Src Id :: " + srcCols['srcId'].str.cat())
-        publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
-        publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in fetchSchema()")
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The exception occurred for Src Id :: " + srcCols['srcId'].str.cat())
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(e))
+        comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())
 
 
 def processData(spark,mapping, srcMap, schemaMap, trgtMap, queryMap,joinCondition,filterCondition,partitionByMap, key,producer,spark_logger):
     # TODO find alternative to any and restrict it to one row using tail head etc
-    publishKafka(producer,spark_logger,key,"INFO","The process mapping of the current process is :: " +mapping)
+    comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","The process mapping of the current process is :: " +mapping)
     if mapping== "One_to_One" or mapping== "One_to_Many":
         singleSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap,filterCondition,partitionByMap,key,producer, spark_logger)
     elif mapping == "Many_to_One"  :
@@ -651,13 +657,13 @@ def processFiles(argTuple):
             key=logKey(argTuple[1], prcRow['prcId'])
             spark_logger = logg.Log4j(argTuple[1],key)
             startTS=datetime.datetime.now().replace(microsecond=0)
-            publishKafka(producer,spark_logger,key,"INFO","Started processing "+prcRow['prcId']+" at "+str(startTS))
+            comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Started processing "+prcRow['prcId']+" at "+str(startTS))
             if prcRow.get('queryProvided') == "True" :
                 executeQuery(argTuple[1], prcRow,key,producer,spark_logger)                
             else :
                 prepareMeta(argTuple[1], prcRow,key,producer,spark_logger)
-            publishKafka(producer,spark_logger,key,"INFO","Finished processing "+prcRow['prcId']) 
-            publishKafka(producer,spark_logger,key,"INFO","Total time taken to process "+prcRow['prcId']+" is "+ str(datetime.datetime.now().replace(microsecond=0)-startTS))       
+            comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Finished processing "+prcRow['prcId']) 
+            comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Total time taken to process "+prcRow['prcId']+" is "+ str(datetime.datetime.now().replace(microsecond=0)-startTS))       
     except Exception as e:
             print(str(datetime.datetime.now()) + "____________ Exception occurred in processFiles() ________________")
             print(str(datetime.datetime.now()) + " The exception occured for :: " + argTuple[0])
