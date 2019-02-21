@@ -23,8 +23,8 @@ config.read('config/config.cnf')
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print("+++++++++++++++++++++Executing Test cases with source as Delimited Text +++++++++++++++++++++++")
-        #prcs = "(prc_PrcId_1.json|prc_PrcId_2.json|prc_PrcId_3.json|prc_PrcId_10.json|prc_PrcId_11.json|prc_PrcId_20.json)"
-        prcs = "(prc_PrcId_21.json)"
+        #prcs = "(prc_PrcId_1.json|prc_PrcId_2.json|prc_PrcId_3.json|prc_PrcId_10.json|prc_PrcId_11.json|prc_PrcId_20.json|prc_PrcId_21.json|prc_PrcId_22.json)"
+        prcs = "(prc_PrcId_22.json)"
         pool = 3
         module.main('config/config.cnf', prcs, pool)
         
@@ -67,7 +67,7 @@ class Test(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.spark.stop()
-        delete_dest_dir()
+        #delete_dest_dir()
         print("tearDownClass")      
 
     '''
@@ -183,6 +183,14 @@ class Test(unittest.TestCase):
         filteredCount = observedDF.count()
         print("The count of filtered records is :: " + str(filteredCount))
         self.assertEqual(4, filteredCount)
+
+    # @unittest.skip("demonstrating skipping")
+    def test_PrcId_22(self):
+        print("Validating test result of PrcId_22")
+        observedDF = self.spark.read.format("csv").option("delimiter","|").load(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_22_csv/csv/")
+        filteredCount = len(observedDF.columns)
+        print("The count of filtered records is :: " + str(filteredCount))
+        self.assertEqual(3, filteredCount)
 
 
 if __name__ == '__main__':

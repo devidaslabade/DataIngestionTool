@@ -1,0 +1,3 @@
+[
+  {"destId":"DestId_22","destType":"local","destLocation":"TestFiles/TestCsvToCsv/destLoc/","fileType":"csv" ,"mode":"overwrite","header":"false","delimiter":"|","quote":"?"}
+]
