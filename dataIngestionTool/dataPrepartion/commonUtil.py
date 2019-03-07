@@ -3,8 +3,10 @@ import json
 import ftplib
 import datetime
 import traceback
+#test
+import shutil
 
-
+#delete this method from dataIngestion
 def publishKafka(producer,topic,spark_logger,prcKey,logLevel,msg):
     try:
         if logLevel == "INFO" or logLevel == "WARN":
@@ -19,16 +21,28 @@ def publishKafka(producer,topic,spark_logger,prcKey,logLevel,msg):
         print(traceback.format_exc())
 
 
-def moveToHDFS(fileAbsPathName,user,password,serverDetails,destinationPath):
+def moveToHDFS(localsrc,destinationPath):
     try:
-       return os.system("scp FILE USER@SERVER:PATH")
-   #os.system('scp "%s" "%s:%s"' % (fileAbsPathName, remotehost, remotefile) )
+       #return os.system("hdfs dfs -copyFromLocal file://home/hadoop/data1.txt hdfs:/data1/data1.txt")
+       #return os.system("hadoop fs -moveFromLocal {0} {1}".format(localsrc,destinationPath) )
+       ret=shutil.move(localsrc,destinationPath)
+       print(ret)
    #os.system("scp API-0.0.1-SNAPSHOT.war user@serverIp:/path")
     except Exception as e:
       print (str(datetime.datetime.now()) + "____________Spark Context creation Failed________________")  
+      print("Exception::msg %s" % str(e))
+      print(traceback.format_exc())
 
-
-
+def moveAcrossHDFS(srcPath,destinationPath):
+    try:
+       #return os.system("hdfs dfs -copyFromLocal file://home/hadoop/data1.txt hdfs:/data1/data1.txt")
+       #os.system("hadoop fs -mv {0} {1}".format(srcPath,destinationPath) )
+       shutil.move(srcPath,destinationPath)
+   #os.system("scp API-0.0.1-SNAPSHOT.war user@serverIp:/path")
+    except Exception as e:
+      print (str(datetime.datetime.now()) + "____________Spark Context creation Failed________________")  
+      print("Exception::msg %s" % str(e))
+      print(traceback.format_exc())
 
 def publishSCP(fileAbsPathName,user,password,serverDetails,destinationPath):
     try:

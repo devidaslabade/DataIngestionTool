@@ -6,6 +6,7 @@ srcCols = config/source/
 destDetails= config/dest/
 destCols = config/dest/
 tptFolder = config/
+ditInputFolder= config/input/
 
 [DIT_Kafka_config]
 KAFKA_BROKERS= localhost:9092

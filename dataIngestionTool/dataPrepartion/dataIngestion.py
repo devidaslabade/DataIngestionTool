@@ -202,6 +202,7 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,part
             comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","The processing singleSrcPrc() process for " + srcKey)
             if  src['fileType'].any() == "json" or src['fileType'].any() == "parquet" or src['fileType'].any() == "orc":
                 comUtil.publishKafka(producer, config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
+                #inputLoc=comUtil.moveToHDFS(src['srcLocation'].any(),config.get('DIT_setup_config', 'ditInputFolder')+key+"/"+srcKey.split(":")[0])
                 df = spark.read.format(src['fileType'].any()).schema(schemaMap[srcKey]).load(src['srcLocation'].any())
                 #.option("inferSchema", src.get('inferSchema').str.cat().lower()) Not required
             elif src['fileType'].any() == "csv" or src['fileType'].any() == "delimited":
