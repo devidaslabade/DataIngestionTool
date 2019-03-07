@@ -24,10 +24,10 @@ def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print("+++++++++++++++++++++Executing Test cases with source as Delimited Text +++++++++++++++++++++++")
         #prcs = "(prc_PrcId_1.json|prc_PrcId_2.json|prc_PrcId_3.json|prc_PrcId_10.json|prc_PrcId_11.json|prc_PrcId_20.json|prc_PrcId_21.json|prc_PrcId_22.json)"
-        prcs = "(prc_PrcId_22.json)"
+        prcs = "(prc_PrcId_23.json)"
         pool = 3
         module.main('config/config.cnf', prcs, pool)
-        
+
 def delete_dest_dir():
     if os.path.exists(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV')):
         shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV'))   
@@ -191,6 +191,14 @@ class Test(unittest.TestCase):
         filteredCount = len(observedDF.columns)
         print("The count of filtered records is :: " + str(filteredCount))
         self.assertEqual(3, filteredCount)
+
+    # @unittest.skip("demonstrating skipping")
+    def test_PrcId_23(self):
+        print("Validating test result of PrcId_23")
+        observedDF = self.spark.read.format("csv").load(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_23_csv/csv/")
+        filteredCount = observedDF.count()
+        print("The count of filtered records is :: " + str(filteredCount))
+        self.assertEqual(4, 4)
 
 
 if __name__ == '__main__':

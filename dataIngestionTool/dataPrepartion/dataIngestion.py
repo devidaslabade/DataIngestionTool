@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import json
+from jsonschema import validate
 import itertools
 from multiprocessing.dummy import Pool as ThreadPool
 import pandas as pd
@@ -21,6 +22,7 @@ except:
 
 from pyspark.sql import SparkSession
 from pyspark.sql.types import *
+from pyspark.sql.functions import lit
 from configparser import ConfigParser
 
 # instantiate config Parser
@@ -188,9 +190,63 @@ def prepareFilterCodition(srcDest,prcRow,srcColMap,key,producer,spark_logger):
         publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
         publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
 
+def validateDataWithSchema(row, jsonSchemaMap):
+    print("index:: ")
+    updateDF = []
+    for x in row:
+        try:
+            data = json.loads(x)
+            #print(data.collect())
+            validate(data, jsonSchemaMap)
+            data["valid"] = "Y"
+            data["errMsg"] = ""
+            updateDF.append(data)
+            print("OK")
+        except Exception as e:
+            print(str(e))
+            data["valid"] = "N"
+            data["errMsg"] = str(e)
+            updateDF.append(data)
+    print("Finally")
+    print(updateDF)
+    return updateDF
 
-                        
-def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,partitionByMap,key,producer, spark_logger):
+def dataValidation(dfWrite, jsonSchemaMap,key,producer,spark_logger):
+    try:
+        results = dfWrite.toJSON()
+        print(":::Print")
+        print(type(results))
+        #print(results.collect())
+        validatedData = results.mapPartitions(lambda iterator: validateDataWithSchema(iterator, jsonSchemaMap))
+        #validatedData = results.map(validateDataWithSchema_old)
+        validatedData.foreach(print)
+        #print(type(validatedData))
+        return validatedData.toDF()
+    except Exception as e:
+        publishKafka(producer, spark_logger, key, "ERROR", "Exception occurred in dataValidation()")
+        publishKafka(producer, spark_logger, key, "ERROR"," The exception occurred for during data validation")
+        publishKafka(producer, spark_logger, key, "ERROR", "Exception::msg %s" % str(e))
+        publishKafka(producer, spark_logger, key, "ERROR", traceback.format_exc())
+
+def validateDataWithSchema_old(row):
+    print("index2:: ")
+    try:
+        jsonSchemaMap = "{'$schema': 'http://json-schema.org/draft-04/schema#', 'title': 'Schema for a ETL', 'type': 'object', 'properties': {'cat_id': {'type': 'integer'}, 'cat_dpt_id': {'type': 'string'}, 'cat_name': {'type': 'string', 'minLength': 15}}}"
+        data = json.loads(row)
+        #print(data)
+        validate(data, jsonSchemaMap)
+        data["valid"] = "Y"
+        data["errMsg"] = ""
+        print("OK")
+    except Exception as e:
+        print(str(e))
+        data["valid"] = "N"
+        data["errMsg"] = str(e)
+    print("Finally2")
+    return data
+
+
+def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,partitionByMap,key,producer, spark_logger, jsonSchemaMap, validationFlag):
     for srcKey, src in srcMap.items():
         try:
             publishKafka(producer,spark_logger,key,"INFO","The processing singleSrcPrc() process for " + srcKey)
@@ -232,7 +288,11 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,part
                 publishKafka(producer,spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from table "+src["table"].any())
                 df = spark.read.format("jdbc").option("url", src["url"].any()).option("driver",src["driver"].any()).option("dbtable", src["table"].any()).option("user", src["user"].any()).option("password", src["password"].any()).load()
             #df.show()
-            #df.printSchema()  
+            print("Schema::")
+            #df = df.withColumn("valid",lit(str("Y")))
+            #df = df.withColumn("errormsg",lit(str("Y")))
+            #df.printSchema()
+
             df.createOrReplaceTempView(srcKey.split(":")[0])
             #Publishing statistics of source data set
             srcSummary=df.describe().toJSON().collect()
@@ -246,106 +306,254 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,part
             publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
             publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
 
-            
-        for destKey, dest in destMap.items():
-            #print(queryMap[destKey])
-            #print(','.join(queryMap[destKey]))
-            try:
-                #Fetch value of compression
-                if dest.get('compression') is None :
-                    compression="none"
-                else :
-                    compression=dest.get('compression').str.cat() 
-                #Fetch value of numPartitions of DF 
-                if dest.get('numPartitions') is None :
-                    numPartitions=8
-                else :
-                    numPartitions=dest.get('numPartitions')[0].item()  
-                    
-                #Fetch value of compression
- 
-                
-                dfWrite=spark.sql("select "+','.join(queryMap[destKey])+" from "+destKey.split(":")[0]+filterCondition)    
-                if dest['fileType'].any() == "json" or dest['fileType'].any() == "orc" or dest['fileType'].any() == "parquet" :
-                    publishKafka(producer, spark_logger, key, "INFO","Publishing data in fromat : " + dest['fileType'].any() + " in mode :" + dest["mode"].any() + " at " + dest["destLocation"].any() + dest["destId"].any() + "_" +
-                                 dest["fileType"].any() + "/" + dest[
-                                     "fileType"].any())
-                    if dest.get('partitionBy') is None:
-                        dfWrite.coalesce(numPartitions).write.mode(dest["mode"].any()).format(dest["fileType"].any()) \
-                            .option("compression", compression) \
-                            .save(
-                            dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
-                            dest["fileType"].any())
-                    else:
-                        print(partitionByMap)
-                        dfWrite.coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]) \
-                            .mode(dest["mode"].any()).format(dest["fileType"].any()) \
-                            .option("compression", compression) \
-                            .save(
-                            dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
-                            dest["fileType"].any())
-                elif dest['fileType'].any() == "csv" or dest['fileType'].any() == 'delimited':
-                    publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " at "+dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
-                                "fileType"].any())
-                    if dest.get('delimiter') is None :
-                        delimiter=","
-                    else :
-                        delimiter=dest.get('delimiter').str.cat()
-                    if dest.get('quote') is None :
-                        quote="\""
-                    else :
-                        quote=dest.get('quote').str.cat()
-                    if dest.get('partitionBy') is None :
-                        dfWrite.coalesce(numPartitions).write.mode(dest["mode"].any()).format(dest["fileType"].any())\
-                        .option("compression",compression).option("header", dest['header'].any()).option("delimiter", delimiter).option("quote", quote)\
-                        .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest["fileType"].any())
-                    else :
-                        print(partitionByMap)
-                        dfWrite.coalesce(numPartitions).write.partitionBy(partitionByMap[destKey])\
-                        .mode(dest["mode"].any()).format(dest["fileType"].any())\
-                        .option("compression",compression).option("header", dest['header'].any()).option("delimiter", delimiter).option("quote", quote)\
-                        .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest["fileType"].any())
-                            
-                    
-                    #spark.sql("select "+','.join(queryMap[destKey])+" from "+destKey.split(":")[0]+filterCondition).show(truncate=False)
-                    #df.selectExpr(queryMap[destKey]).show(truncate=False)
-                elif dest['fileType'].any() == "hivetable":
-                    publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " having table name : "+dest["table"].any())
-                    if dest.get('partitionBy') is None :
-                        dfWrite.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
-                    else :
-                        dfWrite.write.partitionBy(partitionByMap[destKey]).mode(dest["mode"].any()).saveAsTable(dest["table"].any())  
-                elif dest['fileType'].any() == "jdbcclient":
-                    publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " having table name : "+dest["table"].any())
-                    if dest.get('partitionBy') is None :
-                        dfWrite.coalesce(numPartitions).write.format("jdbc").mode(dest["mode"].any())\
-                        .option("url", dest["url"].any()).option("driver", dest["driver"].any())\
-                        .option("dbtable",dest["table"].any()).option("user",dest["user"].any())\
-                        .option("password", dest["password"].any()).save()
-                    else :
-                        dfWrite.coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]).format("jdbc").mode(dest["mode"].any())\
-                        .option("url", dest["url"].any()).option("driver", dest["driver"].any())\
-                        .option("dbtable",dest["table"].any()).option("user",dest["user"].any())\
-                        .option("password", dest["password"].any()).save()
-                            
-                elif dest['fileType'].any() == "DataBase":
-                    print("TEST107c::")
-                    prepareTPTScript(spark,srcMap, schemaMap, destMap, queryMap, producer,spark_logger)
+    #Function to write data to destination as per mapping
+    writeToDestination(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,partitionByMap,key,producer, spark_logger, jsonSchemaMap, validationFlag)
 
-                #Publishing statistics of destination data set
-                destSummary=dfWrite.describe().toJSON().collect()
-                destJsons=[]
-                for dfele in destSummary:
-                    destJsons.append(json.loads(dfele))
-                publishKafka(producer,spark_logger,key,"INFO","The summary of destination data set "+destKey.split(":")[1]+" is : " + json.dumps(destJsons))
-            except Exception as e:
-                publishKafka(producer,spark_logger,key,"ERROR","Exception occurred in singleSrcPrc()")
-                publishKafka(producer,spark_logger,key,"ERROR"," The iteration key for target Map is :: " + destKey)
-                publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
-                publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
 
-    
-def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterCondition,partitionByMap,key, producer,spark_logger):
+def writeToDestination(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,partitionByMap,key,producer, spark_logger, jsonSchemaMap, validationFlag):
+    for destKey, dest in destMap.items():
+        # print(queryMap[destKey])
+        # print(','.join(queryMap[destKey]))
+        try:
+            # Fetch value of compression
+            if dest.get('compression') is None:
+                compression = "none"
+            else:
+                compression = dest.get('compression').str.cat()
+            # Fetch value of numPartitions of DF
+            if dest.get('numPartitions') is None:
+                numPartitions = 8
+            else:
+                numPartitions = dest.get('numPartitions')[0].item()
+
+            # Fetch value of compression
+            print("select " + ','.join(queryMap[destKey]) + " from " + destKey.split(":")[0] + filterCondition)
+            dfWrite = spark.sql("select " + ','.join(queryMap[destKey]) + " from " + destKey.split(":")[0] + filterCondition)
+
+            # data validation with json schema
+            if validationFlag == "True":
+                jsonSchemaValue = jsonSchemaMap.get(destKey)
+                dfWrite = dataValidation(dfWrite, jsonSchemaValue, key, producer, spark_logger)
+                # print(dfWrite.printSchema())
+                writeValidatedData(dfWrite, numPartitions, compression, destKey, dest, queryMap, partitionByMap, key, producer, spark_logger, spark, srcMap,schemaMap, destMap)
+            else:
+                writeNonValidatedData(dfWrite, numPartitions, compression, destKey, dest, queryMap, partitionByMap, key, producer, spark_logger, spark, srcMap,schemaMap, destMap)
+
+        except Exception as e:
+            publishKafka(producer, spark_logger, key, "ERROR", "Exception occurred in singleSrcPrc()")
+            publishKafka(producer, spark_logger, key, "ERROR", " The iteration key for target Map is :: " + destKey)
+            publishKafka(producer, spark_logger, key, "ERROR", "Exception::msg %s" % str(e))
+            publishKafka(producer, spark_logger, key, "ERROR", traceback.format_exc())
+
+def writeNonValidatedData(dfWrite,numPartitions, compression,destKey, dest, queryMap,partitionByMap,key,producer, spark_logger, spark, srcMap, schemaMap, destMap):
+    try:
+        if dest['fileType'].any() == "json" or dest['fileType'].any() == "orc" or dest['fileType'].any() == "parquet":
+            publishKafka(producer, spark_logger, key, "INFO","Publishing data in fromat : " + dest['fileType'].any() + " in mode :" + dest["mode"].any() + " at " + dest["destLocation"].any() + dest["destId"].any() + "_" +
+            dest["fileType"].any() + "/" + dest["fileType"].any())
+            if dest.get('partitionBy') is None:
+                dfWrite.coalesce(numPartitions).write.mode(dest["mode"].any()).format(dest["fileType"].any()) \
+                .option("compression", compression) \
+                .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest["fileType"].any())
+            else:
+                print(partitionByMap)
+                dfWrite.coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]) \
+                .mode(dest["mode"].any()).format(dest["fileType"].any()) \
+                .option("compression", compression) \
+                .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest["fileType"].any())
+
+        elif dest['fileType'].any() == "csv" or dest['fileType'].any() == 'delimited':
+            publishKafka(producer, spark_logger, key, "INFO",
+                         "Publishing data in fromat : " + dest['fileType'].any() + " in mode :" + dest[
+                             "mode"].any() + " at " + dest["destLocation"].any() + dest["destId"].any() + "_" +
+                         dest["fileType"].any() + "/" + dest[
+                             "fileType"].any())
+            if dest.get('delimiter') is None:
+                delimiter = ","
+            else:
+                delimiter = dest.get('delimiter').str.cat()
+            if dest.get('quote') is None:
+                quote = "\""
+            else:
+                quote = dest.get('quote').str.cat()
+            if dest.get('partitionBy') is None:
+                dfWrite.coalesce(numPartitions).write.mode(dest["mode"].any()).format(dest["fileType"].any()) \
+                .option("compression", compression).option("header", dest['header'].any()).option("delimiter", delimiter).option("quote", quote) \
+                .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest["fileType"].any())
+            else:
+                print(partitionByMap)
+                dfWrite.coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]) \
+                .mode(dest["mode"].any()).format(dest["fileType"].any()) \
+                .option("compression", compression).option("header", dest['header'].any()).option("delimiter", delimiter).option("quote", quote) \
+                .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest["fileType"].any())
+
+        # spark.sql("select "+','.join(queryMap[destKey])+" from "+destKey.split(":")[0]+filterCondition).show(truncate=False)
+        # df.selectExpr(queryMap[destKey]).show(truncate=False)
+        elif dest['fileType'].any() == "hivetable":
+            publishKafka(producer, spark_logger, key, "INFO",
+                         "Publishing data in fromat : " + dest['fileType'].any() + " in mode :" + dest[
+                             "mode"].any() + " having table name : " + dest["table"].any())
+            if dest.get('partitionBy') is None:
+                dfWrite.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
+            else:
+                dfWrite.write.partitionBy(partitionByMap[destKey]).mode(dest["mode"].any()).saveAsTable(dest["table"].any())
+
+        elif dest['fileType'].any() == "jdbcclient":
+            publishKafka(producer, spark_logger, key, "INFO",
+                         "Publishing data in fromat : " + dest['fileType'].any() + " in mode :" + dest[
+                             "mode"].any() + " having table name : " + dest["table"].any())
+            if dest.get('partitionBy') is None:
+                dfWrite.coalesce(numPartitions).write.format("jdbc").mode(dest["mode"].any()) \
+                .option("url", dest["url"].any()).option("driver", dest["driver"].any()) \
+                .option("dbtable", dest["table"].any()).option("user", dest["user"].any()) \
+                .option("password", dest["password"].any()).save()
+            else:
+                dfWrite.coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]).format("jdbc").mode(dest["mode"].any()) \
+                .option("url", dest["url"].any()).option("driver", dest["driver"].any()) \
+                .option("dbtable", dest["table"].any()).option("user", dest["user"].any()) \
+                .option("password", dest["password"].any()).save()
+
+        elif dest['fileType'].any() == "DataBase":
+            print("TEST107c::")
+            prepareTPTScript(spark, srcMap, schemaMap, destMap, queryMap, producer, spark_logger)
+
+            # Publishing statistics of destination data set
+            destSummary = dfWrite.describe().toJSON().collect()
+            destJsons = []
+            for dfele in destSummary:
+                destJsons.append(json.loads(dfele))
+            publishKafka(producer, spark_logger, key, "INFO","The summary of destination data set " + destKey.split(":")[1] + " is : " + json.dumps(destJsons))
+    except Exception as e:
+        publishKafka(producer, spark_logger, key, "ERROR", "Exception occurred in writeNonValidatedData()")
+        publishKafka(producer, spark_logger, key, "ERROR", " The iteration key for target Map is :: " + destKey)
+        publishKafka(producer, spark_logger, key, "ERROR", "Exception::msg %s" % str(e))
+        publishKafka(producer, spark_logger, key, "ERROR", traceback.format_exc())
+
+
+def writeValidatedData(dfWrite,numPartitions, compression,destKey, dest, queryMap,partitionByMap,key,producer, spark_logger, spark, srcMap, schemaMap, destMap):
+    try:
+        if dest['fileType'].any() == "json" or dest['fileType'].any() == "orc" or dest['fileType'].any() == "parquet":
+            publishKafka(producer, spark_logger, key, "INFO","Publishing data in fromat : " + dest['fileType'].any() + " in mode :" + dest["mode"].any() + " at " + dest["destLocation"].any() + dest["destId"].any() + "_"
+            +dest["fileType"].any() + "/" + dest["fileType"].any())
+            if dest.get('partitionBy') is None:
+                dfWrite.filter("valid = 'Y'").coalesce(numPartitions).write.mode(dest["mode"].any()).format(
+                dest["fileType"].any()) \
+                .option("compression", compression) \
+                .save(
+                dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                dest["fileType"].any())
+                dfWrite.filter("valid = 'N'").coalesce(numPartitions).write.mode(dest["mode"].any()).format(
+                dest["fileType"].any()) \
+                .option("compression", compression) \
+                .save(
+                dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                dest["fileType"].any() + "_INVALID")
+            else:
+                print(partitionByMap)
+                dfWrite.filter("valid = 'Y'").coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]) \
+                .mode(dest["mode"].any()).format(dest["fileType"].any()) \
+                .option("compression", compression) \
+                .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                dest["fileType"].any())
+
+                dfWrite.filter("valid = 'N'").coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]) \
+                .mode(dest["mode"].any()).format(dest["fileType"].any()) \
+                .option("compression", compression) \
+                .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                dest["fileType"].any() + "_INVALID")
+
+        elif dest['fileType'].any() == "csv" or dest['fileType'].any() == 'delimited':
+            publishKafka(producer, spark_logger, key, "INFO","Publishing data in fromat : " + dest['fileType'].any() + " in mode :" + dest["mode"].any() + " at " + dest["destLocation"].any() + dest["destId"].any() + "_" +
+            dest["fileType"].any() + "/" + dest["fileType"].any())
+            if dest.get('delimiter') is None:
+                delimiter = ","
+            else:
+                delimiter = dest.get('delimiter').str.cat()
+            if dest.get('quote') is None:
+                quote = "\""
+            else:
+                quote = dest.get('quote').str.cat()
+            if dest.get('partitionBy') is None:
+                dfWrite.filter("valid = 'Y'").coalesce(numPartitions).write.mode(dest["mode"].any()).format(
+                dest["fileType"].any()) \
+                .option("compression", compression).option("header", dest['header'].any()).option(
+                "delimiter", delimiter).option("quote", quote) \
+                .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                dest["fileType"].any())
+
+                dfWrite.filter("valid = 'N'").coalesce(numPartitions).write.mode(dest["mode"].any()).format(
+                dest["fileType"].any()) \
+                .option("compression", compression).option("header", dest['header'].any()).option(
+                "delimiter", delimiter).option("quote", quote) \
+                .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                dest["fileType"].any() + "_INVALID")
+            else:
+                print(partitionByMap)
+                dfWrite.filter("valid = 'Y'").coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]) \
+                .mode(dest["mode"].any()).format(dest["fileType"].any()) \
+                .option("compression", compression).option("header", dest['header'].any()).option(
+                "delimiter", delimiter).option("quote", quote) \
+                .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                dest["fileType"].any())
+
+                dfWrite.filter("valid = 'N'").coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]) \
+                .mode(dest["mode"].any()).format(dest["fileType"].any()) \
+                .option("compression", compression).option("header", dest['header'].any()).option(
+                "delimiter", delimiter).option("quote", quote) \
+                .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                dest["fileType"].any() + "_INVALID")
+
+            # spark.sql("select "+','.join(queryMap[destKey])+" from "+destKey.split(":")[0]+filterCondition).show(truncate=False)
+            # df.selectExpr(queryMap[destKey]).show(truncate=False)
+        elif dest['fileType'].any() == "hivetable":
+            publishKafka(producer, spark_logger, key, "INFO","Publishing data in fromat : " + dest['fileType'].any() + " in mode :" + dest["mode"].any() + " having table name : " + dest["table"].any())
+            if dest.get('partitionBy') is None:
+                dfWrite.filter("valid = 'Y'").write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
+                dfWrite.filter("valid = 'N'").write.mode(dest["mode"].any()).saveAsTable(dest["table"].any() + "_INVALID")
+            else:
+                dfWrite.filter("valid = 'Y'").write.partitionBy(partitionByMap[destKey]).mode(dest["mode"].any()).saveAsTable(dest["table"].any())
+                dfWrite.filter("valid = 'N'").write.partitionBy(partitionByMap[destKey]).mode(dest["mode"].any()).saveAsTable(dest["table"].any() + "_INVALID")
+
+        elif dest['fileType'].any() == "jdbcclient":
+            publishKafka(producer, spark_logger, key, "INFO","Publishing data in fromat : " + dest['fileType'].any() + " in mode :" + dest["mode"].any() + " having table name : " + dest["table"].any())
+            if dest.get('partitionBy') is None:
+                dfWrite.filter("valid = 'Y'").coalesce(numPartitions).write.format("jdbc").mode(dest["mode"].any()) \
+                .option("url", dest["url"].any()).option("driver", dest["driver"].any()) \
+                .option("dbtable", dest["table"].any()).option("user", dest["user"].any()) \
+                .option("password", dest["password"].any()).save()
+
+                dfWrite.filter("valid = 'N'").coalesce(numPartitions).write.format("jdbc").mode(dest["mode"].any()) \
+                .option("url", dest["url"].any()).option("driver", dest["driver"].any()) \
+                .option("dbtable", dest["table"].any() + "_INVALID").option("user", dest["user"].any()) \
+                .option("password", dest["password"].any()).save()
+
+            else:
+                dfWrite.filter("valid = 'Y'").coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]).format("jdbc").mode(dest["mode"].any()) \
+                .option("url", dest["url"].any()).option("driver", dest["driver"].any()) \
+                .option("dbtable", dest["table"].any()).option("user", dest["user"].any()) \
+                .option("password", dest["password"].any()).save()
+
+                dfWrite.filter("valid = 'N'").coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]).format("jdbc").mode(dest["mode"].any()) \
+                .option("url", dest["url"].any()).option("driver", dest["driver"].any()) \
+                .option("dbtable", dest["table"].any() + "_INVALID").option("user", dest["user"].any()) \
+                .option("password", dest["password"].any()).save()
+
+        elif dest['fileType'].any() == "DataBase":
+            print("TEST107c::")
+            prepareTPTScript(spark, srcMap, schemaMap, destMap, queryMap, producer, spark_logger)
+
+        # Publishing statistics of destination data set
+        destSummary = dfWrite.describe().toJSON().collect()
+        destJsons = []
+        for dfele in destSummary:
+            destJsons.append(json.loads(dfele))
+            publishKafka(producer, spark_logger, key, "INFO","The summary of destination data set " + destKey.split(":")[1] + " is : " + json.dumps(destJsons))
+    except Exception as e:
+        publishKafka(producer, spark_logger, key, "ERROR", "Exception occurred in writeValidatedData()")
+        publishKafka(producer, spark_logger, key, "ERROR", " The iteration key for target Map is :: " + destKey)
+        publishKafka(producer, spark_logger, key, "ERROR", "Exception::msg %s" % str(e))
+        publishKafka(producer, spark_logger, key, "ERROR", traceback.format_exc())
+
+def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterCondition,partitionByMap,key, producer,spark_logger, jsonSchemaMap, validationFlag):
     for srcKey, src in srcMap.items():
         publishKafka(producer,spark_logger,key,"INFO","In multiSrcPrc() method processing for Src Id " + srcKey)
         try:
@@ -461,13 +669,13 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
                     if dest.get('partitionBy') is None :
                         dfWrite.coalesce(numPartitions).write.mode(dest["mode"].any()).format(dest["fileType"].any())\
                         .option("compression",compression).option("header", dest['header'].any()).option("delimiter", delimiter).option("quote", quote)\
-                        .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest["fileType"].any())  
+                        .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest["fileType"].any())
                     else :
                         dfWrite.coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]).mode(dest["mode"].any()).format(dest["fileType"].any())\
                         .option("compression",compression).option("header", dest['header'].any()).option("delimiter", delimiter).option("quote", quote)\
-                        .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest["fileType"].any())      
-                    
-                    dfWrite.show(truncate=False)                 
+                        .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest["fileType"].any())
+
+                    dfWrite.show(truncate=False)
                     #spark.sql(query[0:-1]+joinCondition+filterCondition).show(truncate=False)
                 elif dest['fileType'].any() == "hivetable":
                     publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " having table name : "+dest["table"].any())
@@ -508,6 +716,7 @@ def prepareMeta(sprkSession, prcRow,key,producer,spark_logger):
         #publishKafka(producer,spark_logger,key,"INFO","Started processing process Id : "+prcRow['prcId'])
         queryMap = {}
         schemaMap = {}
+        jsonSchemaMap = {}
         srcMap = {}
         destMap = {}
         partitionByMap={}
@@ -567,10 +776,17 @@ def prepareMeta(sprkSession, prcRow,key,producer,spark_logger):
                     partitionByMap[srcDest] =  partCol['colName'].str.cat()  
                     print(partCol) 
                     print(partitionByMap)
+            #Generate Json schema for data validation
+            validationFlag = prcRow.get('validation')
+            if validationFlag == "True":
+                if srcDest not in jsonSchemaMap:
+                    destSchema = generateDestinationSchema(destColMap[destColMap['destId'] == mapRow['destId']], key, producer, spark_logger)
+                    jsonSchemaMap[srcDest] = destSchema
+
         #Identify the process mapping     
         mapping=findMapping(mapTab.srcId.nunique(),mapTab.destId.nunique(),key,producer,spark_logger)
         #Process data 
-        processData(sprkSession,mapping, srcMap, schemaMap, destMap, queryMap,joinCondition,filterCondition,partitionByMap,key,producer, spark_logger)
+        processData(sprkSession,mapping, srcMap, schemaMap, destMap, queryMap,joinCondition,filterCondition,partitionByMap,key,producer, spark_logger, jsonSchemaMap, validationFlag)
     except Exception as e:
         publishKafka(producer,spark_logger,key,"ERROR","Exception occurred in prepareMeta()")
         publishKafka(producer,spark_logger,key,"ERROR"," The exception occurred for process ID :: " + prcRow['prcId'])
@@ -578,13 +794,13 @@ def prepareMeta(sprkSession, prcRow,key,producer,spark_logger):
         publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
         publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
 
-
 def executeQuery(sprkSession, prcRow,key,producer,spark_logger):
     possibleError=""
     try:
         publishKafka(producer,spark_logger,key,"INFO","Started processing process Id : "+prcRow['prcId'] + " with SQL query provided")
         queryMap = {}
         schemaMap = {}
+        jsonSchemaMap = {}
         srcMap = {}
         destMap = {}
         partitionByMap={}
@@ -630,10 +846,17 @@ def executeQuery(sprkSession, prcRow,key,producer,spark_logger):
                     partitionByMap[srcDest] =  partCol['colName'].str.cat()  
                     print(partCol) 
                     print(partitionByMap)
+
+            # Generate Json schema for data validation
+            validationFlag = prcRow.get('validation')
+            if validationFlag == "True":
+                if srcDest not in jsonSchemaMap:
+                    destSchema = generateDestinationSchema(destColMap[destColMap['destId'] == row[1]],key, producer, spark_logger)
+                    jsonSchemaMap[srcDest] = destSchema
         #Identify the process mapping     
         mapping=findMapping(len(srclst),len(deslst),key,producer,spark_logger)
         #Process data 
-        processData(sprkSession,mapping, srcMap, schemaMap, destMap, queryMap,joinCondition,filterCondition,partitionByMap,key,producer, spark_logger)
+        processData(sprkSession,mapping, srcMap, schemaMap, destMap, queryMap,joinCondition,filterCondition,partitionByMap,key,producer, spark_logger, jsonSchemaMap, validationFlag)
     except Exception as e:
         publishKafka(producer,spark_logger,key,"ERROR","Exception occurred in executeQuery()")
         publishKafka(producer,spark_logger,key,"ERROR"," The exception occurred for process ID :: " + prcRow['prcId'])
@@ -681,17 +904,110 @@ def fetchSchema(srcCols,key, producer,spark_logger):
         publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
 
 
-def processData(spark,mapping, srcMap, schemaMap, trgtMap, queryMap,joinCondition,filterCondition,partitionByMap, key,producer,spark_logger):
+def processData(spark,mapping, srcMap, schemaMap, trgtMap, queryMap,joinCondition,filterCondition,partitionByMap, key,producer,spark_logger, jsonSchemaMap, validationFlag):
     # TODO find alternative to any and restrict it to one row using tail head etc
     publishKafka(producer,spark_logger,key,"INFO","The process mapping of the current process is :: " +mapping)
     if mapping== "One_to_One" or mapping== "One_to_Many":
-        singleSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap,filterCondition,partitionByMap,key,producer, spark_logger)
+        singleSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap,filterCondition,partitionByMap,key,producer, spark_logger, jsonSchemaMap, validationFlag)
     elif mapping == "Many_to_One"  :
-        multiSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap,joinCondition,filterCondition,partitionByMap,key,producer, spark_logger)
+        multiSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap,joinCondition,filterCondition,partitionByMap,key,producer, spark_logger, jsonSchemaMap, validationFlag)
     elif mapping == "Many_to_Many" :
         print("in "+mapping)
 
+def generateDestinationSchema(destColMap,key, producer,spark_logger):
+    try:
+        publishKafka(producer,spark_logger,key,"INFO","Fetching schema values for Dest Id " + destColMap['destId'].any())
+        schema = prepareSchema(destColMap)
+        print(schema)
+        return schema
+    except Exception as e:
+        publishKafka(producer,spark_logger,key,"ERROR","Exception occurred in generateDestinationSchema()")
+        publishKafka(producer,spark_logger,key,"ERROR"," The exception occurred for Dest Id :: " + destColMap['destId'].str.cat())
+        publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
+        publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
 
+def prepareSchema(destColMap):
+    dict = {}
+    for idx, clm in destColMap.iterrows():
+        colField = clm['colName']
+        typeFields = {}
+        mainList = []
+        # type = clm.get('colType').lower() if clm.get('colType').lower() is not None else "string"
+        required = clm.get('required') if clm.get('required') is not None else False
+        if required == False and pd.np.isnan(required):
+            required = False
+            typeFields['required'] = True
+
+        minimum = clm.get('minimum') if clm.get('minimum') is not None else ""
+        maximum = clm.get('maximum') if clm.get('maximum') is not None else ""
+        minLength = clm.get('minLength') if clm.get('minLength') is not None else ""
+        maxLength = clm.get('maxLength') if clm.get('maxLength') is not None else ""
+
+        if minimum != "" and pd.np.isnan(minimum):
+            minimum = ""
+        if maximum != "" and pd.np.isnan(maximum):
+            maximum = ""
+        if minLength != "" and pd.np.isnan(minLength):
+            minLength = ""
+        if maxLength != "" and pd.np.isnan(maxLength):
+            maxLength = ""
+        # Setting type of field in schema
+        if clm['colType'].lower() == "String".lower():
+            typeFields['type'] = 'string'
+            if minLength != "":
+                typeFields['minLength'] = int(minLength)
+            if maxLength != "":
+                typeFields['maxLength'] = int(maxLength)
+
+        elif clm['colType'].lower() == "Int".lower():
+            typeFields['type'] = 'integer'
+            if minimum != "":
+                typeFields['minimum'] = int(minimum)
+            if maximum != "":
+                typeFields['maximum'] = int(maximum)
+
+        elif clm['colType'].lower() == "Long".lower():
+            typeFields['type'] = 'number'
+            if minimum != "":
+                typeFields['minimum'] = int(minimum)
+            if maximum != "":
+                typeFields['maximum'] = int(maximum)
+
+        elif clm['colType'].lower() == "Float".lower():
+            typeFields['type'] = 'number'
+            if minimum != "":
+                typeFields['minimum'] = int(minimum)
+            if maximum != "":
+                typeFields['maximum'] = int(maximum)
+
+        elif clm['colType'].lower() == "Double".lower():
+            typeFields['type'] = 'number'
+            if minimum != "":
+                typeFields['minimum'] = int(minimum)
+            if maximum != "":
+                typeFields['maximum'] = int(maximum)
+
+        elif clm['colType'].lower() == "Boolean".lower():
+            typeFields['type'] = 'boolean'
+
+        elif clm['colType'].lower() == "Timestamp".lower():
+            typeFields['type'] = 'string'
+
+        else:
+            typeFields['type'] = 'string'
+            if minLength != "":
+                typeFields['minLength'] = int(minLength)
+            if maxLength != "":
+                typeFields['maxLength'] = int(maxLength)
+
+        dict[colField] = typeFields
+
+    schema = {}
+    schema["$schema"] = "http://json-schema.org/draft-04/schema#"
+    schema["title"] = "Schema for a ETL"
+    schema["type"] = "object"
+    schema["properties"] = dict
+    return schema
 
 def processFiles(argTuple):
     # spark = pyspark.sql.SparkSession.builder.appName("DataIngestion").enableHiveSupport().getOrCreate()

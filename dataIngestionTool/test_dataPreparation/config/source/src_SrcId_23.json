@@ -1,0 +1,3 @@
+[
+{"srcId":"SrcId_23","srcType":"local","srcLocation":"TestFiles/TestCsvToCsv/category_validation.csv","fileType":"csv","inferSchema":"false","header":"false","delimiter":","}
+]
