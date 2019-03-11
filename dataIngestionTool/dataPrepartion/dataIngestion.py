@@ -13,12 +13,15 @@ try:
     import dataPrepartion.custlogger as logg
 except:
     import custlogger as logg
-
 try:
     import pyspark
 except:
     import findspark
     findspark.init()
+try:
+    import dataPrepartion.common_utils as comutils
+except:
+    import common_utils as comutils
 
 from pyspark.sql import SparkSession
 from pyspark.sql.types import *
@@ -190,34 +193,14 @@ def prepareFilterCodition(srcDest,prcRow,srcColMap,key,producer,spark_logger):
         publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
         publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
 
-def validateDataWithSchema(row, jsonSchemaMap):
-    print("index:: ")
-    updateDF = []
-    for x in row:
-        try:
-            data = json.loads(x)
-            #print(data.collect())
-            validate(data, jsonSchemaMap)
-            data["valid"] = "Y"
-            data["errMsg"] = ""
-            updateDF.append(data)
-            print("OK")
-        except Exception as e:
-            print(str(e))
-            data["valid"] = "N"
-            data["errMsg"] = str(e)
-            updateDF.append(data)
-    print("Finally")
-    print(updateDF)
-    return updateDF
-
 def dataValidation(dfWrite, jsonSchemaMap,key,producer,spark_logger):
     try:
         results = dfWrite.toJSON()
         print(":::Print")
         print(type(results))
         #print(results.collect())
-        validatedData = results.mapPartitions(lambda iterator: validateDataWithSchema(iterator, jsonSchemaMap))
+        validatedData = results.mapPartitions(lambda iterator: comutils.validateDataWithSchema(iterator, jsonSchemaMap))
+
         #validatedData = results.map(validateDataWithSchema_old)
         validatedData.foreach(print)
         #print(type(validatedData))
@@ -1046,7 +1029,6 @@ def main(configPath, prcPattern,pool):
     threadPool = ThreadPool(pool)
     print("List of process files to be processed are :: \n", prcList)
     spark = pyspark.sql.SparkSession.builder.appName("DataIngestion").enableHiveSupport().getOrCreate()
-    
     threadPool.map(processFiles, zip(prcList, itertools.repeat(spark.newSession())))
     # spark.stop()
 

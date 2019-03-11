@@ -10,6 +10,8 @@ import shutil
 from pathlib import Path
 from configparser import ConfigParser
 from pyspark.sql.functions import col
+from pyspark.conf import SparkConf
+
 
 try:
     import pyspark
@@ -52,10 +54,12 @@ class Test(unittest.TestCase):
         os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_CSV')
         delete_dest_dir()
         #TestFiles\\TestCsvToCsv\\destLoc\\
+        cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Csv_To_Csv").enableHiveSupport().getOrCreate()
+        cls.spark.sparkContext.addPyFile('C:/User_Drive/Projects/DataIngestion_Latest/DataIngestionTool/dataIngestionTool/dataPrepartion/common_utils.py')
         execute_valid_process()
         print("hi")
         print(str(Path.cwd()))
-        cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Csv_To_Csv").enableHiveSupport().getOrCreate()
+
 
     def setUp(self):
         print("setup")     
