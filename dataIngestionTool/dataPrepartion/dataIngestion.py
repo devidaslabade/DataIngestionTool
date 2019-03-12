@@ -992,7 +992,7 @@ def prepareSchema(destColMap):
         dict[colField] = typeFields
 
     schema = {}
-    schema["$schema"] = "http://json-schema.org/draft-04/schema#"
+    schema["$schema"] = "http://json-schema.org/draft-03/schema#"
     schema["title"] = "Schema for a ETL"
     schema["type"] = "object"
     schema["properties"] = dict

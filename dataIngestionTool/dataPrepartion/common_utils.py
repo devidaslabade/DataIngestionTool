@@ -14,9 +14,9 @@ def validateDataWithSchema(row, jsonSchemaMap):
             updateDF.append(data)
             print("OK")
         except Exception as e:
-            print(str(e))
+            print(str(e.message))
             data["valid"] = "N"
-            data["errMsg"] = str(e)
+            data["errMsg"] = str(e.message)
             updateDF.append(data)
     print("Finally")
     print(updateDF)
