@@ -16,9 +16,7 @@ except:
     
 from pyspark.sql.functions import col
 from pyspark.conf import SparkConf     
-# instantiate config Parser
-config = ConfigParser()
-config.read('config/config.cnf')
+
 
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
@@ -28,18 +26,18 @@ def execute_valid_process():
         pool = 3
         module.main('config/config.cnf', prcs, pool)
 
-def delete_dest_dir():
-    if os.path.exists(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV')):
-        shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV'))   
+def delete_dest_dir(cls):
+    if os.path.exists(cls.config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV')):
+        shutil.rmtree(cls.config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV'))   
     
-    if os.path.isfile(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_JDBC')):
-        os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_JDBC'))  
+    if os.path.isfile(cls.config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_JDBC')):
+        os.remove(cls.config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_JDBC'))  
     
-    if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_WAREHOUSE')):
-            shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_WAREHOUSE'))
+    if os.path.exists(cls.config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_WAREHOUSE')):
+            shutil.rmtree(cls.config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_WAREHOUSE'))
         
-    if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_DERBY')):
-            shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_DERBY'),ignore_errors=True)  
+    if os.path.exists(cls.config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_DERBY')):
+            shutil.rmtree(cls.config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_DERBY'),ignore_errors=True)  
         
  
 
@@ -49,7 +47,11 @@ class Test(unittest.TestCase):
     def setUpClass(cls):
         warnings.simplefilter('ignore', category=ImportWarning)
         warnings.simplefilter('ignore', category=DeprecationWarning)
-        os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_CSV')
+        # instantiate config Parser
+        cls.config = ConfigParser()
+        cls.config.read('config/config.cnf')
+        os.environ["SPARK_CONF_DIR"] = cls.config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_CSV')
+        delete_dest_dir(cls)
         modulePath = os.path.join(os.path.abspath("../dataPrepartion"),'common_utils.py')
         print("Adding module py file ::"+modulePath+" to Spark context")
         cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Csv_To_Csv").enableHiveSupport().getOrCreate()
@@ -68,7 +70,7 @@ class Test(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.spark.stop()
-        delete_dest_dir()
+        delete_dest_dir(cls)
         print("tearDownClass")      
 
     '''
@@ -77,7 +79,7 @@ class Test(unittest.TestCase):
     #@unittest.skip("demonstrating skipping")    
     def test_PrcId_1(self):
         print("Validating test result of PrcId_1")
-        observedDF = self.spark.read.json(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip()+"/DestId_1_json/json/")
+        observedDF = self.spark.read.json(self.config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip()+"/DestId_1_json/json/")
         obsCount=observedDF.count()
         filteredCount=observedDF.filter("cat_dpt_id = '2_X_Y_Z' and dept_name = 'Fitness' ").count()
         print("The count of records at destination location is :: "+str(obsCount))
@@ -94,7 +96,7 @@ class Test(unittest.TestCase):
     def test_PrcId_2(self):
         print("Validating test result of PrcId_2")
         isValid=False
-        destDir=config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip()+"/DestId_2_json/json/"
+        destDir=self.config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip()+"/DestId_2_json/json/"
         observedDF = self.spark.read.json(destDir)
         obsCount=observedDF.count()
         print("The count of records at destination location is :: "+str(obsCount))
@@ -112,7 +114,7 @@ class Test(unittest.TestCase):
     #@unittest.skip("demonstrating skipping")
     def test_PrcId_3(self):
         print("Validating test result of PrcId_3")
-        observedDF = self.spark.read.json(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip()+"/DestId_3_json/json/")
+        observedDF = self.spark.read.json(self.config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip()+"/DestId_3_json/json/")
         obsCount=observedDF.show()
         filteredCount=observedDF.filter("category_department_id = 8 and cnt_cat = 10 ").count()
         #print("The count of records at destination location is :: "+str(obsCount))
@@ -138,7 +140,7 @@ class Test(unittest.TestCase):
     #@unittest.skip("demonstrating skipping") 
     def test_PrcId_11(self):
         print("Validating test result of PrcId_11")
-        conn = sqlite3.connect(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_JDBC'))
+        conn = sqlite3.connect(self.config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_JDBC'))
         cursor = conn.cursor()
         # Read from JDBC Source
         resultSet=cursor.execute('select cat_name from Dest_11 where dept_name="Fitness" and cat_id=2').fetchall()        
@@ -153,8 +155,8 @@ class Test(unittest.TestCase):
         flag = False
         sFlag = False
         tFlag = False
-        observedDF = self.spark.read.json(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_20_json/json/")
-        srcDF = self.spark.read.format("csv").option("header","true").option("inferSchema","true").option("quote","?").load(config.get('DIT_TEST_CASE_config', 'SRC_LOC_CSV'))
+        observedDF = self.spark.read.json(self.config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_20_json/json/")
+        srcDF = self.spark.read.format("csv").option("header","true").option("inferSchema","true").option("quote","?").load(self.config.get('DIT_TEST_CASE_config', 'SRC_LOC_CSV'))
 
         joinDF = observedDF.join(srcDF, observedDF.cat_id == srcDF.c0).select(observedDF.cat_name, srcDF.c2)
         print(joinDF.show())
@@ -180,7 +182,7 @@ class Test(unittest.TestCase):
     #@unittest.skip("demonstrating skipping")
     def test_PrcId_21(self):
         print("Validating test result of PrcId_21")
-        observedDF = self.spark.read.json(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_21_json/json/")
+        observedDF = self.spark.read.json(self.config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_21_json/json/")
         filteredCount = observedDF.count()
         print("The count of filtered records is :: " + str(filteredCount))
         self.assertEqual(4, filteredCount)
@@ -188,7 +190,7 @@ class Test(unittest.TestCase):
     #@unittest.skip("demonstrating skipping")
     def test_PrcId_22(self):
         print("Validating test result of PrcId_22")
-        observedDF = self.spark.read.format("csv").option("delimiter","|").load(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_22_csv/csv/")
+        observedDF = self.spark.read.format("csv").option("delimiter","|").load(self.config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_22_csv/csv/")
         filteredCount = len(observedDF.columns)
         print("The count of filtered records is :: " + str(filteredCount))
         self.assertEqual(3, filteredCount)
@@ -199,13 +201,13 @@ class Test(unittest.TestCase):
         flag = False
         validFlag = False
         invalidFlag = False
-        observedvalidDF = self.spark.read.format("csv").load(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_23_csv/csv/")
+        observedvalidDF = self.spark.read.format("csv").load(self.config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_23_csv/csv/")
         filteredValidCount = observedvalidDF.count()
         print("The count of filtered valid records is :: " + str(filteredValidCount))
         if(filteredValidCount == 2):
             validFlag = True
 
-        observedinvalidDF = self.spark.read.format("csv").load(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_23_csv/csv_INVALID/")
+        observedinvalidDF = self.spark.read.format("csv").load(self.config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_23_csv/csv_INVALID/")
         filteredInvalidCount = observedinvalidDF.count()
         print("The count of filtered invalid records is :: " + str(filteredInvalidCount))
         if (filteredInvalidCount == 6):
