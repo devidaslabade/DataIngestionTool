@@ -7,17 +7,15 @@ import sqlite3
 import warnings
 import importlib
 import shutil
-from pathlib import Path
 from configparser import ConfigParser
-from pyspark.sql.functions import col
-from pyspark.conf import SparkConf
-
-
 try:
     import pyspark
 except:
     import findspark
-    findspark.init()   
+    findspark.init()  
+    
+from pyspark.sql.functions import col
+from pyspark.conf import SparkConf     
 # instantiate config Parser
 config = ConfigParser()
 config.read('config/config.cnf')
@@ -25,8 +23,8 @@ config.read('config/config.cnf')
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print("+++++++++++++++++++++Executing Test cases with source as Delimited Text +++++++++++++++++++++++")
-        #prcs = "(prc_PrcId_1.json|prc_PrcId_2.json|prc_PrcId_3.json|prc_PrcId_10.json|prc_PrcId_11.json|prc_PrcId_20.json|prc_PrcId_21.json|prc_PrcId_22.json)"
-        prcs = "(prc_PrcId_23.json)"
+        prcs = "(prc_PrcId_1.json|prc_PrcId_2.json|prc_PrcId_3.json|prc_PrcId_10.json|prc_PrcId_11.json|prc_PrcId_20.json|prc_PrcId_21.json|prc_PrcId_22.json|prc_PrcId_23.json)"
+        #prcs = "(prc_PrcId_23.json)"
         pool = 3
         module.main('config/config.cnf', prcs, pool)
 
@@ -52,13 +50,12 @@ class Test(unittest.TestCase):
         warnings.simplefilter('ignore', category=ImportWarning)
         warnings.simplefilter('ignore', category=DeprecationWarning)
         os.environ["SPARK_CONF_DIR"] = config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_CSV')
-        delete_dest_dir()
-        #TestFiles\\TestCsvToCsv\\destLoc\\
+        modulePath = os.path.join(os.path.abspath("../dataPrepartion"),'common_utils.py')
+        print("Adding module py file ::"+modulePath+" to Spark context")
         cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Csv_To_Csv").enableHiveSupport().getOrCreate()
-        cls.spark.sparkContext.addPyFile('C:/User_Drive/Projects/DataIngestion_Latest/DataIngestionTool/dataIngestionTool/dataPrepartion/common_utils.py')
+        cls.spark.sparkContext.addPyFile(modulePath)
         execute_valid_process()
-        print("hi")
-        print(str(Path.cwd()))
+
 
 
     def setUp(self):
@@ -71,7 +68,7 @@ class Test(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.spark.stop()
-        #delete_dest_dir()
+        delete_dest_dir()
         print("tearDownClass")      
 
     '''
@@ -180,7 +177,7 @@ class Test(unittest.TestCase):
         print("Final value::"+str(tFlag))
         self.assertTrue(tFlag)
 
-    # @unittest.skip("demonstrating skipping")
+    #@unittest.skip("demonstrating skipping")
     def test_PrcId_21(self):
         print("Validating test result of PrcId_21")
         observedDF = self.spark.read.json(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_21_json/json/")
@@ -188,7 +185,7 @@ class Test(unittest.TestCase):
         print("The count of filtered records is :: " + str(filteredCount))
         self.assertEqual(4, filteredCount)
 
-    # @unittest.skip("demonstrating skipping")
+    #@unittest.skip("demonstrating skipping")
     def test_PrcId_22(self):
         print("Validating test result of PrcId_22")
         observedDF = self.spark.read.format("csv").option("delimiter","|").load(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_22_csv/csv/")
@@ -196,7 +193,7 @@ class Test(unittest.TestCase):
         print("The count of filtered records is :: " + str(filteredCount))
         self.assertEqual(3, filteredCount)
 
-    # @unittest.skip("demonstrating skipping")
+    #@unittest.skip("demonstrating skipping")
     def test_PrcId_23(self):
         print("Validating test result of PrcId_23")
         flag = False
