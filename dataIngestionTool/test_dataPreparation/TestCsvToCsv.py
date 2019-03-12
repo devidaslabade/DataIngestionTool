@@ -199,10 +199,26 @@ class Test(unittest.TestCase):
     # @unittest.skip("demonstrating skipping")
     def test_PrcId_23(self):
         print("Validating test result of PrcId_23")
-        observedDF = self.spark.read.format("csv").load(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_23_csv/csv/")
-        filteredCount = observedDF.count()
-        print("The count of filtered records is :: " + str(filteredCount))
-        self.assertEqual(4, 4)
+        flag = False
+        validFlag = False
+        invalidFlag = False
+        observedvalidDF = self.spark.read.format("csv").load(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_23_csv/csv/")
+        filteredValidCount = observedvalidDF.count()
+        print("The count of filtered valid records is :: " + str(filteredValidCount))
+        if(filteredValidCount == 2):
+            validFlag = True
+
+        observedinvalidDF = self.spark.read.format("csv").load(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_23_csv/csv_INVALID/")
+        filteredInvalidCount = observedinvalidDF.count()
+        print("The count of filtered invalid records is :: " + str(filteredInvalidCount))
+        if (filteredInvalidCount == 6):
+            invalidFlag = True
+
+        if(validFlag and invalidFlag):
+            flag = True
+
+        print("Final value of test case result :: " + str(flag))
+        self.assertTrue(flag)
 
 
 if __name__ == '__main__':

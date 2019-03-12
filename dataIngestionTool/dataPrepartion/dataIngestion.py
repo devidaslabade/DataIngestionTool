@@ -19,9 +19,9 @@ except:
     import findspark
     findspark.init()
 try:
-    import dataPrepartion.common_utils as comutils
-except:
     import common_utils as comutils
+except:
+    import dataPrepartion.common_utils as comutils
 
 from pyspark.sql import SparkSession
 from pyspark.sql.types import *
@@ -919,6 +919,8 @@ def prepareSchema(destColMap):
         required = clm.get('required') if clm.get('required') is not None else False
         if required == False and pd.np.isnan(required):
             required = False
+            typeFields['required'] = False
+        else:
             typeFields['required'] = True
 
         minimum = clm.get('minimum') if clm.get('minimum') is not None else ""
