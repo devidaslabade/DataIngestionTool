@@ -47,7 +47,7 @@ class Test(unittest.TestCase):
     def setUpClass(cls):
         warnings.simplefilter('ignore', category=ImportWarning)
         warnings.simplefilter('ignore', category=DeprecationWarning)
-        # instantiate config Parser
+        # instantiate config Parser 
         cls.config = ConfigParser()
         cls.config.read('config/config.cnf')
         os.environ["SPARK_CONF_DIR"] = cls.config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_CSV')
