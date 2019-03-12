@@ -917,11 +917,15 @@ def prepareSchema(destColMap):
         mainList = []
         # type = clm.get('colType').lower() if clm.get('colType').lower() is not None else "string"
         required = clm.get('required') if clm.get('required') is not None else False
-        if required == False and pd.np.isnan(required):
-            required = False
-            typeFields['required'] = False
+        print(required)
+        if required == 'True':
+            required = True
+        elif required == 'False':
+            required == False
         else:
-            typeFields['required'] = True
+            required = False
+
+        typeFields['required'] = required
 
         minimum = clm.get('minimum') if clm.get('minimum') is not None else ""
         maximum = clm.get('maximum') if clm.get('maximum') is not None else ""
