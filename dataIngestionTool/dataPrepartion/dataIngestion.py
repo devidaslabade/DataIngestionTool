@@ -44,20 +44,6 @@ def logKey(spark, prcId):
         print("Exception::msg %s" % str(e))
         print(traceback.format_exc())
 
-
-def publishKafka(producer,spark_logger,prcKey,logLevel,msg):
-    try:
-        if logLevel == "INFO" or logLevel == "WARN":
-            spark_logger.warn(msg)
-        else :
-            spark_logger.error(msg)     
-        jsonString = {"Timestamp":str(datetime.datetime.now()),"LogLevel": logLevel,"LogMsg":msg}
-        producer.send(config.get('DIT_Kafka_config', 'TOPIC'), key=prcKey.encode('utf-8'), value=json.dumps(jsonString).encode('utf-8'))
-    except Exception as e:
-        print(str(datetime.datetime.now()) + "____________ Exception occurred in publishKafka() ________________")
-        print("Exception::msg %s" % str(e))
-        print(traceback.format_exc())
-
 def prepareTPTScript(spark,srcMap, schemaMap, destMap, queryMap, spark_logger):
     for srcKey, src in srcMap.items():
         spark_logger.warn("The processing singleSrcPrc() process for " + srcKey.split(":")[0])
