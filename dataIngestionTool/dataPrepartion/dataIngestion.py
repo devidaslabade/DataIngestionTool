@@ -585,111 +585,277 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
             publishKafka(producer,spark_logger,key,"ERROR"," The iteration key for srcMap is :: " + srcKey)
             publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
             publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
-            
-    queryExpr=""
-    #List to keep track of unique destination for publishing
-    distinctDest=[]  
-    if joinCondition == "NA" and filterCondition == "NA" :
-        #Should iterate only once as query is being provided
+
+    writeToMultiSrcDestination(joinCondition, spark, srcMap, schemaMap, destMap, queryMap, filterCondition, partitionByMap, key, producer,
+                       spark_logger, jsonSchemaMap, validationFlag)
+
+def writeToMultiSrcDestination(joinCondition, spark, srcMap, schemaMap, destMap, queryMap, filterCondition, partitionByMap, key, producer,
+                               spark_logger, jsonSchemaMap, validationFlag):
+    queryExpr = ""
+    # List to keep track of unique destination for publishing
+    distinctDest = []
+    if joinCondition == "NA" and filterCondition == "NA":
+        # Should iterate only once as query is being provided
         for qkey, queryStr in queryMap.items():
-            queryExpr=queryStr[0]
-    else :
-        query="select "    
+            queryExpr = queryStr[0]
+    else:
+        query = "select "
         for qkey, querylst in queryMap.items():
-            query+=','.join(querylst)+","
-        queryExpr=query[0:-1]+joinCondition+filterCondition
-        
-            
+            query += ','.join(querylst) + ","
+        queryExpr = query[0:-1] + joinCondition + filterCondition
     for destKey, dest in destMap.items():
-        if destKey.split(":")[1] not in distinctDest :
+        if destKey.split(":")[1] not in distinctDest:
             distinctDest.append(destKey.split(":")[1])
-            publishKafka(producer,spark_logger,key,"INFO","Publishing the records for Dest Id :: "+destKey.split(":")[1])
-            #Fetch value of compression
-            if dest.get('compression') is None :
-                compression="none"
-            else :
-                compression=dest.get('compression').str.cat() 
-            #Fetch value of numPartitions
-            if dest.get('numPartitions') is None :                 
-                numPartitions=8
-            else :
-                numPartitions=dest.get('numPartitions')[0].item()
-            print(partitionByMap[destKey])     
+            publishKafka(producer, spark_logger, key, "INFO",
+                         "Publishing the records for Dest Id :: " + destKey.split(":")[1])
+            # Fetch value of compression
+            if dest.get('compression') is None:
+                compression = "none"
+            else:
+                compression = dest.get('compression').str.cat()
+                # Fetch value of numPartitions
+            if dest.get('numPartitions') is None:
+                numPartitions = 8
+            else:
+                numPartitions = dest.get('numPartitions')[0].item()
+            print(partitionByMap[destKey])
             try:
-                publishKafka(producer,spark_logger,key,"INFO",":::::Executing Query::::::"+queryExpr)
-                dfWrite=spark.sql(queryExpr)
-                if dest['fileType'].any() == "json" or dest['fileType'].any() == "orc" or dest['fileType'].any() == "parquet":
-                    publishKafka(producer, spark_logger, key, "INFO","Publishing data in fromat : " + dest['fileType'].any() + " in mode :" + dest["mode"].any() + " at " + dest["destLocation"].any() + dest["destId"].any() + "_" +
-                                 dest["fileType"].any() + "/" + dest[
-                                     "fileType"].any())
-                    if dest.get('partitionBy') is None:
-                        dfWrite.coalesce(numPartitions).write.mode(dest["mode"].any()).format(dest["fileType"].any()) \
-                            .option("compression", compression) \
-                            .save(
-                            dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
-                            dest["fileType"].any())
-                    else:
-                        dfWrite.coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]).mode(
-                            dest["mode"].any()).format(dest["fileType"].any()) \
-                            .option("compression", compression) \
-                            .save(
-                            dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
-                            dest["fileType"].any())
+                publishKafka(producer, spark_logger, key, "INFO", ":::::Executing Query::::::" + queryExpr)
+                dfWrite = spark.sql(queryExpr)
+                # data validation with json schema
+                if validationFlag == "True":
+                    jsonSchemaValue = jsonSchemaMap.get(destKey)
+                    dfWrite = dataValidation(dfWrite, jsonSchemaValue, key, producer, spark_logger)
+                    # print(dfWrite.printSchema())
+                    writeMultiSrcValidatedData(dfWrite, numPartitions, compression, destKey, dest, queryMap, partitionByMap,
+                                       key, producer, spark_logger, spark, srcMap, schemaMap, destMap)
+                else:
+                    writeMultiSrcNonValidatedData(dfWrite, numPartitions, compression, destKey, dest, queryMap, partitionByMap,
+                                          key, producer, spark_logger, spark, srcMap, schemaMap, destMap)
 
-                    dfWrite.show(truncate=False)
-                    # spark.sql(query[0:-1]+joinCondition+filterCondition).show(truncate=False)
-                elif dest['fileType'].any() == "csv" or dest['fileType'].any() == "delimited":
-                    publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " at "+dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest[
-                                "fileType"].any())
-                    if dest.get('delimiter') is None :
-                        delimiter=","
-                    else :
-                        delimiter=dest.get('delimiter').str.cat()
-                    if dest.get('quote') is None :
-                        quote="\""
-                    else :
-                        quote=dest.get('quote').str.cat()
-                    if dest.get('partitionBy') is None :
-                        dfWrite.coalesce(numPartitions).write.mode(dest["mode"].any()).format(dest["fileType"].any())\
-                        .option("compression",compression).option("header", dest['header'].any()).option("delimiter", delimiter).option("quote", quote)\
-                        .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest["fileType"].any())
-                    else :
-                        dfWrite.coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]).mode(dest["mode"].any()).format(dest["fileType"].any())\
-                        .option("compression",compression).option("header", dest['header'].any()).option("delimiter", delimiter).option("quote", quote)\
-                        .save(dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" + dest["fileType"].any())
-
-                    dfWrite.show(truncate=False)
-                    #spark.sql(query[0:-1]+joinCondition+filterCondition).show(truncate=False)
-                elif dest['fileType'].any() == "hivetable":
-                    publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " having table name : "+dest["table"].any())
-                    if dest.get('partitionBy') is None :
-                        dfWrite.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
-                    else :
-                        dfWrite.write.partitionBy(partitionByMap[destKey]).mode(dest["mode"].any()).saveAsTable(dest["table"].any())    
-                elif dest['fileType'].any() == "jdbcclient":
-                    publishKafka(producer,spark_logger,key,"INFO","Publishing data in fromat : "+dest['fileType'].any()+" in mode :"+dest["mode"].any() + " having table name : "+dest["table"].any())
-                    if dest.get('partitionBy') is None :
-                        dfWrite.coalesce(numPartitions).write.format("jdbc").mode(dest["mode"].any())\
-                        .option("url", dest["url"].any()).option("driver", dest["driver"].any())\
-                        .option("dbtable",dest["table"].any()).option("user",dest["user"].any())\
-                        .option("password", dest["password"].any()).save()
-                    else :
-                        dfWrite.coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]).format("jdbc").mode(dest["mode"].any())\
-                        .option("url", dest["url"].any()).option("driver", dest["driver"].any())\
-                        .option("dbtable",dest["table"].any()).option("user",dest["user"].any())\
-                        .option("password", dest["password"].any()).save()                            
-                elif dest['fileType'].any() == "DataBase":
-                    print("TEST107c::")
-                    prepareTPTScript(spark,srcMap, schemaMap, destMap, queryMap,producer, spark_logger)   
-                         
             except Exception as e:
-                publishKafka(producer,spark_logger,key,"ERROR","Exception occurred in multiSrcPrc()")
-                publishKafka(producer,spark_logger,key,"ERROR"," The iteration key for target Map is :: " + destKey)
-                publishKafka(producer,spark_logger,key,"ERROR","Exception::msg %s" % str(e))
-                publishKafka(producer,spark_logger,key,"ERROR",traceback.format_exc())
-        
-        publishKafka(producer,spark_logger,key,"INFO","Published the records for Dest Ids :: "+' '.join(distinctDest))
-        
+                publishKafka(producer, spark_logger, key, "ERROR", "Exception occurred in multiSrcPrc()")
+                publishKafka(producer, spark_logger, key, "ERROR", " The iteration key for target Map is :: " + destKey)
+                publishKafka(producer, spark_logger, key, "ERROR", "Exception::msg %s" % str(e))
+                publishKafka(producer, spark_logger, key, "ERROR", traceback.format_exc())
+
+            publishKafka(producer, spark_logger, key, "INFO","Published the records for Dest Ids :: " + ' '.join(distinctDest))
+
+def writeMultiSrcNonValidatedData(dfWrite, numPartitions, compression, destKey, dest, queryMap, partitionByMap,
+                                       key, producer, spark_logger, spark, srcMap, schemaMap, destMap):
+    try:
+        if dest['fileType'].any() == "json" or dest['fileType'].any() == "orc" or dest['fileType'].any() == "parquet":
+            publishKafka(producer, spark_logger, key, "INFO",
+                         "Publishing data in fromat : " + dest['fileType'].any() + " in mode :" + dest[
+                             "mode"].any() + " at " + dest["destLocation"].any() + dest["destId"].any() + "_" +
+                         dest["fileType"].any() + "/" + dest[
+                             "fileType"].any())
+            if dest.get('partitionBy') is None:
+                dfWrite.coalesce(numPartitions).write.mode(dest["mode"].any()).format(dest["fileType"].any()) \
+                    .option("compression", compression) \
+                    .save(
+                    dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                    dest["fileType"].any())
+            else:
+                dfWrite.coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]).mode(
+                    dest["mode"].any()).format(dest["fileType"].any()) \
+                    .option("compression", compression) \
+                    .save(
+                    dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                    dest["fileType"].any())
+
+            dfWrite.show(truncate=False)
+            # spark.sql(query[0:-1]+joinCondition+filterCondition).show(truncate=False)
+        elif dest['fileType'].any() == "csv" or dest['fileType'].any() == "delimited":
+            publishKafka(producer, spark_logger, key, "INFO",
+                         "Publishing data in fromat : " + dest['fileType'].any() + " in mode :" + dest[
+                             "mode"].any() + " at " + dest["destLocation"].any() + dest["destId"].any() + "_" +
+                         dest["fileType"].any() + "/" + dest[
+                             "fileType"].any())
+            if dest.get('delimiter') is None:
+                delimiter = ","
+            else:
+                delimiter = dest.get('delimiter').str.cat()
+            if dest.get('quote') is None:
+                quote = "\""
+            else:
+                quote = dest.get('quote').str.cat()
+            if dest.get('partitionBy') is None:
+                dfWrite.coalesce(numPartitions).write.mode(dest["mode"].any()).format(dest["fileType"].any()) \
+                    .option("compression", compression).option("header", dest['header'].any()).option(
+                    "delimiter", delimiter).option("quote", quote) \
+                    .save(
+                    dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                    dest["fileType"].any())
+            else:
+                dfWrite.coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]).mode(
+                    dest["mode"].any()).format(dest["fileType"].any()) \
+                    .option("compression", compression).option("header", dest['header'].any()).option(
+                    "delimiter", delimiter).option("quote", quote) \
+                    .save(
+                    dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                    dest["fileType"].any())
+
+            dfWrite.show(truncate=False)
+            # spark.sql(query[0:-1]+joinCondition+filterCondition).show(truncate=False)
+        elif dest['fileType'].any() == "hivetable":
+            publishKafka(producer, spark_logger, key, "INFO",
+                         "Publishing data in fromat : " + dest['fileType'].any() + " in mode :" + dest[
+                             "mode"].any() + " having table name : " + dest["table"].any())
+            if dest.get('partitionBy') is None:
+                dfWrite.write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
+            else:
+                dfWrite.write.partitionBy(partitionByMap[destKey]).mode(dest["mode"].any()).saveAsTable(
+                    dest["table"].any())
+        elif dest['fileType'].any() == "jdbcclient":
+            publishKafka(producer, spark_logger, key, "INFO",
+                         "Publishing data in fromat : " + dest['fileType'].any() + " in mode :" + dest[
+                             "mode"].any() + " having table name : " + dest["table"].any())
+            if dest.get('partitionBy') is None:
+                dfWrite.coalesce(numPartitions).write.format("jdbc").mode(dest["mode"].any()) \
+                    .option("url", dest["url"].any()).option("driver", dest["driver"].any()) \
+                    .option("dbtable", dest["table"].any()).option("user", dest["user"].any()) \
+                    .option("password", dest["password"].any()).save()
+            else:
+                dfWrite.coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]).format("jdbc").mode(
+                    dest["mode"].any()) \
+                    .option("url", dest["url"].any()).option("driver", dest["driver"].any()) \
+                    .option("dbtable", dest["table"].any()).option("user", dest["user"].any()) \
+                    .option("password", dest["password"].any()).save()
+        elif dest['fileType'].any() == "DataBase":
+            print("TEST107c::")
+            prepareTPTScript(spark, srcMap, schemaMap, destMap, queryMap, producer, spark_logger)
+    except Exception as e:
+        publishKafka(producer, spark_logger, key, "ERROR", "Exception occurred in writeMultiSrcNonValidatedData()")
+        publishKafka(producer, spark_logger, key, "ERROR", " The iteration key for target Map is :: " + destKey)
+        publishKafka(producer, spark_logger, key, "ERROR", "Exception::msg %s" % str(e))
+        publishKafka(producer, spark_logger, key, "ERROR", traceback.format_exc())
+
+def writeMultiSrcValidatedData(dfWrite, numPartitions, compression, destKey, dest, queryMap, partitionByMap,
+                                       key, producer, spark_logger, spark, srcMap, schemaMap, destMap):
+    try:
+        if dest['fileType'].any() == "json" or dest['fileType'].any() == "orc" or dest['fileType'].any() == "parquet":
+            publishKafka(producer, spark_logger, key, "INFO",
+                         "Publishing data in fromat : " + dest['fileType'].any() + " in mode :" + dest[
+                             "mode"].any() + " at " + dest["destLocation"].any() + dest["destId"].any() + "_" +
+                         dest["fileType"].any() + "/" + dest[
+                             "fileType"].any())
+            if dest.get('partitionBy') is None:
+                dfWrite.filter("valid = 'Y'").coalesce(numPartitions).write.mode(dest["mode"].any()).format(dest["fileType"].any()) \
+                    .option("compression", compression) \
+                    .save(
+                    dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                    dest["fileType"].any())
+                dfWrite.filter("valid = 'N'").coalesce(numPartitions).write.mode(dest["mode"].any()).format(
+                    dest["fileType"].any()) \
+                    .option("compression", compression) \
+                    .save(
+                    dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                    dest["fileType"].any() + "_INVALID")
+            else:
+                dfWrite.filter("valid = 'Y'").coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]).mode(
+                    dest["mode"].any()).format(dest["fileType"].any()) \
+                    .option("compression", compression) \
+                    .save(
+                    dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                    dest["fileType"].any())
+                dfWrite.filter("valid = 'N'").coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]).mode(
+                    dest["mode"].any()).format(dest["fileType"].any()) \
+                    .option("compression", compression) \
+                    .save(
+                    dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                    dest["fileType"].any() + "_INVALID")
+
+            dfWrite.show(truncate=False)
+            # spark.sql(query[0:-1]+joinCondition+filterCondition).show(truncate=False)
+        elif dest['fileType'].any() == "csv" or dest['fileType'].any() == "delimited":
+            publishKafka(producer, spark_logger, key, "INFO",
+                         "Publishing data in fromat : " + dest['fileType'].any() + " in mode :" + dest[
+                             "mode"].any() + " at " + dest["destLocation"].any() + dest["destId"].any() + "_" +
+                         dest["fileType"].any() + "/" + dest[
+                             "fileType"].any())
+            if dest.get('delimiter') is None:
+                delimiter = ","
+            else:
+                delimiter = dest.get('delimiter').str.cat()
+            if dest.get('quote') is None:
+                quote = "\""
+            else:
+                quote = dest.get('quote').str.cat()
+            if dest.get('partitionBy') is None:
+                dfWrite.filter("valid = 'Y'").coalesce(numPartitions).write.mode(dest["mode"].any()).format(dest["fileType"].any()) \
+                    .option("compression", compression).option("header", dest['header'].any()).option(
+                    "delimiter", delimiter).option("quote", quote) \
+                    .save(
+                    dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                    dest["fileType"].any())
+                dfWrite.filter("valid = 'N'").coalesce(numPartitions).write.mode(dest["mode"].any()).format(dest["fileType"].any()) \
+                    .option("compression", compression).option("header", dest['header'].any()).option(
+                    "delimiter", delimiter).option("quote", quote) \
+                    .save(
+                    dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                    dest["fileType"].any() + "_INVALID")
+            else:
+                dfWrite.filter("valid = 'Y'").coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]).mode(
+                    dest["mode"].any()).format(dest["fileType"].any()) \
+                    .option("compression", compression).option("header", dest['header'].any()).option(
+                    "delimiter", delimiter).option("quote", quote) \
+                    .save(
+                    dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                    dest["fileType"].any())
+                dfWrite.filter("valid = 'N'").coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]).mode(
+                    dest["mode"].any()).format(dest["fileType"].any()) \
+                    .option("compression", compression).option("header", dest['header'].any()).option(
+                    "delimiter", delimiter).option("quote", quote) \
+                    .save(
+                    dest["destLocation"].any() + dest["destId"].any() + "_" + dest["fileType"].any() + "/" +
+                    dest["fileType"].any() + "_INVALID")
+
+            dfWrite.show(truncate=False)
+            # spark.sql(query[0:-1]+joinCondition+filterCondition).show(truncate=False)
+        elif dest['fileType'].any() == "hivetable":
+            publishKafka(producer, spark_logger, key, "INFO",
+                         "Publishing data in fromat : " + dest['fileType'].any() + " in mode :" + dest[
+                             "mode"].any() + " having table name : " + dest["table"].any())
+            if dest.get('partitionBy') is None:
+                dfWrite.filter("valid = 'Y'").write.mode(dest["mode"].any()).saveAsTable(dest["table"].any())
+                dfWrite.filter("valid = 'N'").write.mode(dest["mode"].any()).saveAsTable(dest["table"].any() + "_INVALID")
+            else:
+                dfWrite.filter("valid = 'Y'").write.partitionBy(partitionByMap[destKey]).mode(dest["mode"].any()).saveAsTable(dest["table"].any())
+                dfWrite.filter("valid = 'N'").write.partitionBy(partitionByMap[destKey]).mode(dest["mode"].any()).saveAsTable(dest["table"].any() + "_INVALID")
+        elif dest['fileType'].any() == "jdbcclient":
+            publishKafka(producer, spark_logger, key, "INFO",
+                         "Publishing data in fromat : " + dest['fileType'].any() + " in mode :" + dest[
+                             "mode"].any() + " having table name : " + dest["table"].any())
+            if dest.get('partitionBy') is None:
+                dfWrite.filter("valid = 'Y'").coalesce(numPartitions).write.format("jdbc").mode(dest["mode"].any()) \
+                    .option("url", dest["url"].any()).option("driver", dest["driver"].any()) \
+                    .option("dbtable", dest["table"].any()).option("user", dest["user"].any()) \
+                    .option("password", dest["password"].any()).save()
+                dfWrite.filter("valid = 'N'").coalesce(numPartitions).write.format("jdbc").mode(dest["mode"].any()) \
+                    .option("url", dest["url"].any()).option("driver", dest["driver"].any()) \
+                    .option("dbtable", dest["table"].any() + "_INVALID").option("user", dest["user"].any()) \
+                    .option("password", dest["password"].any()).save()
+            else:
+                dfWrite.filter("valid = 'Y'").coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]).format("jdbc").mode(
+                    dest["mode"].any()) \
+                    .option("url", dest["url"].any()).option("driver", dest["driver"].any()) \
+                    .option("dbtable", dest["table"].any()).option("user", dest["user"].any()) \
+                    .option("password", dest["password"].any()).save()
+                dfWrite.filter("valid = 'N'").coalesce(numPartitions).write.partitionBy(partitionByMap[destKey]).format("jdbc").mode(
+                    dest["mode"].any()) \
+                    .option("url", dest["url"].any()).option("driver", dest["driver"].any()) \
+                    .option("dbtable", dest["table"].any() + "_INVALID").option("user", dest["user"].any()) \
+                    .option("password", dest["password"].any()).save()
+        elif dest['fileType'].any() == "DataBase":
+            print("TEST107c::")
+            prepareTPTScript(spark, srcMap, schemaMap, destMap, queryMap, producer, spark_logger)
+    except Exception as e:
+        publishKafka(producer, spark_logger, key, "ERROR", "Exception occurred in writeMultiSrcValidatedData()")
+        publishKafka(producer, spark_logger, key, "ERROR", " The iteration key for target Map is :: " + destKey)
+        publishKafka(producer, spark_logger, key, "ERROR", "Exception::msg %s" % str(e))
+        publishKafka(producer, spark_logger, key, "ERROR", traceback.format_exc())
+
 def prepareMeta(sprkSession, prcRow,key,producer,spark_logger):
     possibleError=""
     #key=logKey(sprkSession, prcRow['prcId'])

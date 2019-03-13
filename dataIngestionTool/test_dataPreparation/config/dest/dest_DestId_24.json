@@ -1,0 +1,3 @@
+[
+  {"destId":"DestId_24","destType":"local","destLocation":"TestFiles/TestCsvToCsv/destLoc/","fileType":"jdbcclient","table":"dest_24" ,"mode":"overwrite","url":"jdbc:sqlite:TestFiles/TestCsvToCsv/csvtest.db","driver" :"org.sqlite.JDBC", "user": "root","password":"","numPartitions":"1"}
+]

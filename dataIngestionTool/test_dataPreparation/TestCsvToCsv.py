@@ -23,15 +23,15 @@ config.read('config/config.cnf')
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print("+++++++++++++++++++++Executing Test cases with source as Delimited Text +++++++++++++++++++++++")
-        prcs = "(prc_PrcId_1.json|prc_PrcId_2.json|prc_PrcId_3.json|prc_PrcId_10.json|prc_PrcId_11.json|prc_PrcId_20.json|prc_PrcId_21.json|prc_PrcId_22.json|prc_PrcId_23.json)"
-        #prcs = "(prc_PrcId_23.json)"
+        prcs = "(prc_PrcId_1.json|prc_PrcId_2.json|prc_PrcId_3.json|prc_PrcId_10.json|prc_PrcId_11.json|prc_PrcId_20.json|prc_PrcId_21.json|prc_PrcId_22.json|prc_PrcId_23.json|prc_PrcId_24.json)"
+        #prcs = "(prc_PrcId_24.json)"
         pool = 3
         module.main('config/config.cnf', prcs, pool)
 
 def delete_dest_dir():
     if os.path.exists(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV')):
         shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV'))   
-    
+
     if os.path.isfile(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_JDBC')):
         os.remove(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_JDBC'))  
     
@@ -69,7 +69,7 @@ class Test(unittest.TestCase):
     def tearDownClass(cls):
         cls.spark.stop()
         delete_dest_dir()
-        print("tearDownClass")      
+        print("tearDownClass")
 
     '''
     Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
@@ -215,6 +215,24 @@ class Test(unittest.TestCase):
             flag = True
 
         print("Final value of test case result :: " + str(flag))
+        self.assertTrue(flag)
+
+    # @unittest.skip("demonstrating skipping")
+    def test_PrcId_24(self):
+        print("Validating test result of PrcId_24")
+        conn = sqlite3.connect(config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_JDBC'))
+        cursor = conn.cursor()
+        # Read from JDBC Source
+        resultSet1 = cursor.execute('select count(cat_id) from Dest_24').fetchall()
+        resultSet2 = cursor.execute('select count(cat_id) from Dest_24_INVALID').fetchall()
+        cursor.close()
+        conn.close()
+        print("resultSet1::" + str(resultSet1))
+        print("resultSet2::" + str(resultSet2))
+        flag = False
+        if resultSet1[0][0] == 36 and resultSet2[0][0] == 12:
+            flag = True
+
         self.assertTrue(flag)
 
 
