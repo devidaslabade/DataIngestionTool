@@ -49,7 +49,7 @@ def moveToHDFS(localsrc,destinationPath):
        #return os.system("hadoop fs -moveFromLocal {0} {1}".format(localsrc,destinationPath) )
        ret=shutil.move(localsrc,destinationPath)
        print(ret)
-   #os.system("scp API-0.0.1-SNAPSHOT.war user@serverIp:/path")
+       #os.system("scp API-0.0.1-SNAPSHOT.war user@serverIp:/path")
     except Exception as e:
       print (str(datetime.datetime.now()) + "____________Spark Context creation Failed________________")  
       print("Exception::msg %s" % str(e))
