@@ -11,7 +11,7 @@ If it is not installed then use the following command \
 Now follow following steps :
 
 1. Install pandas on all nodes \
-    pip install pandas --user
+    pip install pandas==0.20.3 --user
 2. Download modules mentioned in requirement \
 	pip wheel -r requirements.txt -w dist
 3. Rename the wheel extension to zip \
