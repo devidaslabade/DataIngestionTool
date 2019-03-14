@@ -45,3 +45,10 @@ DEST_LOC_FXDWDTH = TestFiles/TestFixedWidth/destLoc
 DB_LOC_FXDWDTH_JDBC = TestFiles/TestFixedWidth/fixedWidthtest.db
 DB_LOC_FXDWDTH_WAREHOUSE = TestFiles/TestFixedWidth/warehouse
 DB_LOC_FXDWDTH_DERBY = TestFiles/TestFixedWidth/derby
+
+
+SPARK_CONF_DIR_INCREMENTAL = TestFiles/TestIncrementalFeatures/conf
+DEST_LOC_INCREMENTAL = TestFiles/TestIncrementalFeatures/destLoc
+DB_LOC_INCREMENTAL_JDBC = TestFiles/TestIncrementalFeatures/incrementaltest.db
+DB_LOC_INCREMENTAL_WAREHOUSE = TestFiles/TestIncrementalFeatures/warehouse
+DB_LOC_INCREMENTAL_DERBY = TestFiles/TestIncrementalFeatures/derby
