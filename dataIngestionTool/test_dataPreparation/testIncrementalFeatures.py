@@ -53,9 +53,9 @@ class Test(unittest.TestCase):
         delete_dest_dir(cls)
         modulePath = os.path.join(os.path.abspath("../dataPrepartion"),'common_utils.py')
         print("Adding module py file ::"+modulePath+" to Spark context")
-        #cls.spark = pyspark.sql.SparkSession.builder.appName("Test_incremental_features").enableHiveSupport().getOrCreate()
-        #cls.spark.sparkContext.addPyFile(modulePath)
-        #execute_valid_process()
+        cls.spark = pyspark.sql.SparkSession.builder.appName("Test_incremental_features").enableHiveSupport().getOrCreate()
+        cls.spark.sparkContext.addPyFile(modulePath)
+        execute_valid_process()
 
 
 
