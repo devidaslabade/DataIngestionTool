@@ -6,6 +6,8 @@ srcCols = config/source/
 destDetails= config/dest/
 destCols = config/dest/
 tptFolder = config/
+processingZone = C:/Users/sk250102/Documents/Teradata/DIT/DataIngestionTool/dataIngestionTool/test_dataPreparation/TestFiles/
+				 
 
 [DIT_Kafka_config]
 KAFKA_BROKERS= localhost:9092

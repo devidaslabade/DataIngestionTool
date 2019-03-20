@@ -42,29 +42,99 @@ def publishKafka(producer,topic,spark_logger,prcKey,logLevel,msg):
         print("Exception::msg %s" % str(e))
         print(traceback.format_exc())
 
-
-def moveToHDFS(localsrc,destinationPath):
+def logKey(spark, prcId):
     try:
+        current_date = str(datetime.datetime.now().strftime("%Y-%m-%d"))
+        app_id = spark.sparkContext.getConf().get('spark.app.id')
+        app_name = spark.sparkContext.getConf().get('spark.app.name')
+        logkey = str(prcId+"-"+app_name+"-"+app_id+"-"+current_date)
+        return logkey
+    except Exception as e:
+        print(str(datetime.datetime.now()) + "____________ Exception occurred in logKey() ________________")
+        print("Exception::msg %s" % str(e))
+        print(traceback.format_exc())
+        
+        
+def dirPathGen(dirType,srcDestId,producer,config,spark_logger,key):
+    try:       
+        loc= config.get('DIT_setup_config', 'processingZone')+dirType+"/"+key+"/"+srcDestId.replace(":","_")+"/"
+        return loc
+    except Exception as ex:
+        publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in dirPathGen()")
+        publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The exception occurred for Src Id :: " )
+        publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(ex))
+        publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())
+
+
+
+def moveDataToProcessingZone(config,srcMap,key,producer,spark_logger):
+    try :
+        publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Moving data from landing zone to processing zone")
+        for srcKey, src in srcMap.items():
+            if src.get('srcType').str.cat().lower() == "local".lower():
+                moveToHDFS("input",srcKey,src['srcLocation'].any(),config,key,producer,spark_logger)
+            elif src.get('srcType').str.cat().lower() == "hdfs".lower(): 
+                moveAcrossHDFS("input",srcKey,src['srcLocation'].any(),config,key,producer,spark_logger)
+            else :
+                #TODO add remote,ftp,scp options
+                print ("srcType not mentioned")     
+    
+    
+    
+    except Exception as ex :
+        publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in moveDataToProcessingZone()")
+        publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The exception occurred for Src Id :: " )
+        publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(ex))
+        publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())
+
+def moveData(subFolderName,config,srcMap,key,producer,spark_logger):
+        try :
+            publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Moving data from processing zone to Archive/Success")
+            for srcKey, src in srcMap.items():
+                srcLocation= dirPathGen("input",srcKey,producer,config,spark_logger,key)
+                destLocation= dirPathGen(subFolderName,srcKey,producer,config,spark_logger,key)
+                moveAcrossHDFS(srcLocation,destLocation,producer,config,spark_logger,key)
+            return True
+        except Exception as ex :
+            publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in moveData()")
+            publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The exception occurred for Src Id :: " )
+            publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(ex))
+            publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())  
+            return Flase
+            
+def moveToHDFS(dirType,srcDestId,localsrc,config,key,producer,spark_logger):
+    try:
+       destinationPath= dirPathGen(dirType,srcDestId,producer,config,spark_logger,key)
+       #config.get('DIT_setup_config', 'processingZone')+"input/"+key+"/"
+       publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","moving files from local system :: "+localsrc+" to :: "+destinationPath)
        #return os.system("hdfs dfs -copyFromLocal file://home/hadoop/data1.txt hdfs:/data1/data1.txt")
        #return os.system("hadoop fs -moveFromLocal {0} {1}".format(localsrc,destinationPath) )
+       if not os.path.exists(os.path.dirname(destinationPath)):
+           os.makedirs(os.path.dirname(destinationPath))
+           #os.mkdir(destinationPath)
        ret=shutil.move(localsrc,destinationPath)
-       print(ret)
+       print("the return value :: "+ret)
        #os.system("scp API-0.0.1-SNAPSHOT.war user@serverIp:/path")
-    except Exception as e:
-      print (str(datetime.datetime.now()) + "____________Spark Context creation Failed________________")  
-      print("Exception::msg %s" % str(e))
-      print(traceback.format_exc())
+    except Exception as ex:
+        publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in moveToHDFS()")
+        publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The exception occurred for Src Id :: " )
+        publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(ex))
+        publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())
 
-def moveAcrossHDFS(srcPath,destinationPath):
+#TODO complete this method
+def moveAcrossHDFS(srcLocation,destLocation,producer,config,spark_logger,key):
     try:
+       publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","moving files from HDFS :: "+srcLocation+" to :: "+destLocation)
        #return os.system("hdfs dfs -copyFromLocal file://home/hadoop/data1.txt hdfs:/data1/data1.txt")
        #os.system("hadoop fs -mv {0} {1}".format(srcPath,destinationPath) )
-       shutil.move(srcPath,destinationPath)
+       retv=shutil.move(srcLocation,destLocation)
+       print("tthe ret is "+retv)
    #os.system("scp API-0.0.1-SNAPSHOT.war user@serverIp:/path")
-    except Exception as e:
-      print (str(datetime.datetime.now()) + "____________Spark Context creation Failed________________")  
-      print("Exception::msg %s" % str(e))
-      print(traceback.format_exc())
+    except Exception as ex:
+        publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in moveAcrossHDFS()")
+        publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The exception occurred for Src Id :: " )
+        publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(ex))
+        publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())
 
 def publishSCP(fileAbsPathName,user,password,serverDetails,destinationPath):
     try:
