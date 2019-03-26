@@ -579,6 +579,7 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
 
     writeToMultiSrcDestination(joinCondition, spark, srcMap, schemaMap, destMap, queryMap, filterCondition, partitionByMap, key, producer,
                        spark_logger, jsonSchemaMap, validationFlag)
+    return True #TODO Fix this
 
 def writeToMultiSrcDestination(joinCondition, spark, srcMap, schemaMap, destMap, queryMap, filterCondition, partitionByMap, key, producer,
                                spark_logger, jsonSchemaMap, validationFlag):
@@ -926,13 +927,14 @@ def prepareMeta(sprkSession, prcRow,key,producer,spark_logger):
         #Identify the process mapping     
         mapping=findMapping(mapTab.srcId.nunique(),mapTab.destId.nunique(),key,producer,spark_logger)
         #Process data 
-        processData(sprkSession,mapping, srcMap, schemaMap, destMap, queryMap,joinCondition,filterCondition,partitionByMap,key,producer, spark_logger, jsonSchemaMap, validationFlag)
+        return processData(sprkSession,mapping, srcMap, schemaMap, destMap, queryMap,joinCondition,filterCondition,partitionByMap,key,producer, spark_logger, jsonSchemaMap, validationFlag)
     except Exception as e:
         comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in prepareMeta()")
         comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The exception occurred for process ID :: " + prcRow['prcId'])
         comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The possible errors can be "+possibleError)
         comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(e))
         comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())
+        return False
 
 def executeQuery(sprkSession, prcRow,key,producer,spark_logger):
     possibleError=""
@@ -1046,18 +1048,25 @@ def fetchSchema(srcCols,key, producer,spark_logger):
 
 def processData(spark,mapping, srcMap, schemaMap, trgtMap, queryMap,joinCondition,filterCondition,partitionByMap, key,producer,spark_logger, jsonSchemaMap, validationFlag):
     # TODO find alternative to any and restrict it to one row using tail head etc
+    isSuccess=False
     comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","The process mapping of the current process is :: " +mapping)
     if mapping== "One_to_One" or mapping== "One_to_Many":
-        comutils.moveDataToProcessingZone(config,srcMap,key,producer,spark_logger)
-        isSuccess=singleSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap,filterCondition,partitionByMap,key,producer, spark_logger, jsonSchemaMap, validationFlag)
+        if comutils.moveDataToProcessingZone(config,srcMap,key,producer,spark_logger):
+            isSuccess=singleSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap,filterCondition,partitionByMap,key,producer, spark_logger, jsonSchemaMap, validationFlag)
         if isSuccess :
+            comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Moving data from processing zone to Success")
             comutils.moveData("success",config,srcMap,key,producer,spark_logger)
         else :
+            comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Moving data from processing zone to ::ERROR-Folder ::")
             comutils.moveData("error",config,srcMap,key,producer,spark_logger)    
     elif mapping == "Many_to_One"  :
-        multiSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap,joinCondition,filterCondition,partitionByMap,key,producer, spark_logger, jsonSchemaMap, validationFlag)
+        isSuccess=multiSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap,joinCondition,filterCondition,partitionByMap,key,producer, spark_logger, jsonSchemaMap, validationFlag)
     elif mapping == "Many_to_Many" :
         print("in "+mapping)
+    
+    return isSuccess
+
+
 
 def generateDestinationSchema(destColMap,key, producer,spark_logger):
     try:

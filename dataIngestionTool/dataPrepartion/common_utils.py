@@ -69,27 +69,29 @@ def dirPathGen(dirType,srcDestId,producer,config,spark_logger,key):
 
 def moveDataToProcessingZone(config,srcMap,key,producer,spark_logger):
     try :
+        isSuccess = False
         publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Moving data from landing zone to processing zone")
         for srcKey, src in srcMap.items():
             if src.get('srcType').str.cat().lower() == "local".lower():
-                moveToHDFS("input",srcKey,src['srcLocation'].any(),config,key,producer,spark_logger)
+                isSuccess=moveToHDFS("input",srcKey,src['srcLocation'].any(),config,key,producer,spark_logger)
             elif src.get('srcType').str.cat().lower() == "hdfs".lower(): 
-                moveAcrossHDFS("input",srcKey,src['srcLocation'].any(),config,key,producer,spark_logger)
+                isSuccess=moveAcrossHDFS("input",srcKey,src['srcLocation'].any(),config,key,producer,spark_logger)
             else :
                 #TODO add remote,ftp,scp options
                 print ("srcType not mentioned")     
     
     
-    
+        return isSuccess
     except Exception as ex :
         publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in moveDataToProcessingZone()")
         publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The exception occurred for Src Id :: " )
         publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(ex))
         publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())
+        return False
 
 def moveData(subFolderName,config,srcMap,key,producer,spark_logger):
         try :
-            publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Moving data from processing zone to Archive/Success")
+            
             for srcKey, src in srcMap.items():
                 srcLocation= dirPathGen("input",srcKey,producer,config,spark_logger,key)
                 destLocation= dirPathGen(subFolderName,srcKey,producer,config,spark_logger,key)
@@ -115,11 +117,13 @@ def moveToHDFS(dirType,srcDestId,localsrc,config,key,producer,spark_logger):
        ret=shutil.move(localsrc,destinationPath)
        print("the return value :: "+ret)
        #os.system("scp API-0.0.1-SNAPSHOT.war user@serverIp:/path")
+       return True
     except Exception as ex:
         publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in moveToHDFS()")
         publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The exception occurred for Src Id :: " )
         publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(ex))
         publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())
+        return False
 
 #TODO complete this method
 def moveAcrossHDFS(srcLocation,destLocation,producer,config,spark_logger,key):
@@ -130,11 +134,13 @@ def moveAcrossHDFS(srcLocation,destLocation,producer,config,spark_logger,key):
        retv=shutil.move(srcLocation,destLocation)
        print("tthe ret is "+retv)
    #os.system("scp API-0.0.1-SNAPSHOT.war user@serverIp:/path")
+       return True
     except Exception as ex:
         publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in moveAcrossHDFS()")
         publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The exception occurred for Src Id :: " )
         publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(ex))
         publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())
+        return False
 
 def publishSCP(fileAbsPathName,user,password,serverDetails,destinationPath):
     try:
