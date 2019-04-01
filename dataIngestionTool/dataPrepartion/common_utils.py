@@ -79,8 +79,6 @@ def moveDataToProcessingZone(config,srcMap,key,producer,spark_logger):
             else :
                 #TODO add remote,ftp,scp options
                 print ("srcType not mentioned")     
-    
-    
         return isSuccess
     except Exception as ex :
         publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in moveDataToProcessingZone()")
@@ -133,7 +131,7 @@ def moveAcrossHDFS(srcLocation,destLocation,producer,config,spark_logger,key):
        #os.system("hadoop fs -mv {0} {1}".format(srcPath,destinationPath) )
        retv=shutil.move(srcLocation,destLocation)
        print("tthe ret is "+retv)
-   #os.system("scp API-0.0.1-SNAPSHOT.war user@serverIp:/path")
+       #os.system("scp API-0.0.1-SNAPSHOT.war user@serverIp:/path")
        return True
     except Exception as ex:
         publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in moveAcrossHDFS()")

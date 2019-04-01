@@ -938,6 +938,7 @@ def prepareMeta(sprkSession, prcRow,key,producer,spark_logger):
 
 def executeQuery(sprkSession, prcRow,key,producer,spark_logger):
     possibleError=""
+    #isSuccess = False
     try:
         comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Started processing process Id : "+prcRow['prcId'] + " with SQL query provided")
         queryMap = {}
@@ -998,14 +999,14 @@ def executeQuery(sprkSession, prcRow,key,producer,spark_logger):
         #Identify the process mapping     
         mapping=findMapping(len(srclst),len(deslst),key,producer,spark_logger)
         #Process data 
-        processData(sprkSession,mapping, srcMap, schemaMap, destMap, queryMap,joinCondition,filterCondition,partitionByMap,key,producer, spark_logger, jsonSchemaMap, validationFlag)
+        return processData(sprkSession,mapping, srcMap, schemaMap, destMap, queryMap,joinCondition,filterCondition,partitionByMap,key,producer, spark_logger, jsonSchemaMap, validationFlag)
     except Exception as e:
         comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in executeQuery()")
         comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The exception occurred for process ID :: " + prcRow['prcId'])
         comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The possible errors can be "+possibleError)
         comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(e))
         comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())
-
+        return False
                 
 def fetchSchema(srcCols,key, producer,spark_logger):
     try:
@@ -1055,7 +1056,11 @@ def processData(spark,mapping, srcMap, schemaMap, trgtMap, queryMap,joinConditio
             isSuccess=singleSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap,filterCondition,partitionByMap,key,producer, spark_logger, jsonSchemaMap, validationFlag)
         if isSuccess :
             comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Moving data from processing zone to Success")
-            comutils.moveData("success",config,srcMap,key,producer,spark_logger)
+            isMoved=comutils.moveData("success",config,srcMap,key,producer,spark_logger)
+            #TODO : How to handle data that failed to be moved to success folder
+            if not isMoved:
+                isSuccess = False
+                comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Failed to move data from processing zone to Success")
         else :
             comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Moving data from processing zone to ::ERROR-Folder ::")
             comutils.moveData("error",config,srcMap,key,producer,spark_logger)    
@@ -1171,6 +1176,7 @@ def prepareSchema(destColMap):
 
 def processFiles(argTuple):
     # spark = pyspark.sql.SparkSession.builder.appName("DataIngestion").enableHiveSupport().getOrCreate()
+    isProcessed=False
     try:
         prc = pd.read_json(argTuple[0])
         #instantiate Kafka Producer
@@ -1178,14 +1184,19 @@ def processFiles(argTuple):
         for prcIdx, prcRow in prc[prc['isActive'] == "True"].iterrows():
             key=comutils.logKey(argTuple[1], prcRow['prcId'])
             spark_logger = logg.Log4j(argTuple[1],key)
-            startTS=datetime.datetime.now().replace(microsecond=0)
-            comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Started processing "+prcRow['prcId']+" at "+str(startTS))
-            if prcRow.get('queryProvided') == "True" :
-                executeQuery(argTuple[1], prcRow,key,producer,spark_logger)                
-            else :
-                prepareMeta(argTuple[1], prcRow,key,producer,spark_logger)
-            comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Finished processing "+prcRow['prcId']) 
-            comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Total time taken to process "+prcRow['prcId']+" is "+ str(datetime.datetime.now().replace(microsecond=0)-startTS))       
+            try:                
+                startTS=datetime.datetime.now().replace(microsecond=0)
+                comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Started processing "+prcRow['prcId']+" at "+str(startTS))
+                if prcRow.get('queryProvided') == "True" :
+                    isProcessed=executeQuery(argTuple[1], prcRow,key,producer,spark_logger)                
+                else :
+                    prepareMeta(argTuple[1], prcRow,key,producer,spark_logger) #TODO set return type
+                comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Finished processing "+prcRow['prcId']) 
+                comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Total time taken to process "+prcRow['prcId']+" is "+ str(datetime.datetime.now().replace(microsecond=0)-startTS))
+            except Exception as e:
+                comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in processFiles() while processing process ID :: "+prcRow['prcId'])
+                comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(e))
+                comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())         
     except Exception as e:
             print(str(datetime.datetime.now()) + "____________ Exception occurred in processFiles() ________________")
             print(str(datetime.datetime.now()) + " The exception occured for :: " + argTuple[0])
