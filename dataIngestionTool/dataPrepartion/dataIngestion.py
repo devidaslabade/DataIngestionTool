@@ -531,12 +531,13 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
     for srcKey, src in srcMap.items():
         comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","In multiSrcPrc() method processing for Src Id " + srcKey)
         try:
+            srcLocation= comutils.dirPathGen("input",srcKey,producer,config,spark_logger,key)
             if  src['fileType'].any() == "json" or src['fileType'].any() == "parquet" or src['fileType'].any() == "orc":
-                comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
-                df = spark.read.format(src['fileType'].any()).schema(schemaMap[srcKey]).load(src['srcLocation'].any())
+                comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+srcLocation)
+                df = spark.read.format(src['fileType'].any()).schema(schemaMap[srcKey]).load(srcLocation)
                 #.option("inferSchema", src.get('inferSchema').str.cat().lower()) Not required
             elif src['fileType'].any() == "csv" or src['fileType'].any() == "delimited":
-                comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
+                comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+srcLocation)
                 if src.get('delimiter') is None :
                     delimiter=","
                 else :
@@ -547,11 +548,11 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
                 else :
                     quote=src.get('quote').str.cat()
                 if src.get('inferSchema') is None or src.get('inferSchema').str.cat().lower() == "false" :
-                    df = spark.read.format("csv").schema(schemaMap[srcKey]).option("header", src['header'].any()).option("delimiter", delimiter).option("quote", quote).load(src['srcLocation'].any())
+                    df = spark.read.format("csv").schema(schemaMap[srcKey]).option("header", src['header'].any()).option("delimiter", delimiter).option("quote", quote).load(srcLocation)
                 else:
-                    df = spark.read.format("csv").option("header", src['header'].any()).option("delimiter", delimiter).option("quote", quote).option("inferSchema", src.get('inferSchema').str.cat().lower()).load(src['srcLocation'].any())
+                    df = spark.read.format("csv").option("header", src['header'].any()).option("delimiter", delimiter).option("quote", quote).option("inferSchema", src.get('inferSchema').str.cat().lower()).load(srcLocation)
             elif src['fileType'].any() == "fixedWidth":
-                comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+src['srcLocation'].any())
+                comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+srcLocation)
                 df=fixedWidthProcessor(src,schemaMap[srcKey],spark,key,producer, spark_logger)                
                 df.show(truncate=False)
             elif src['fileType'].any() == "hivetable":
@@ -1049,27 +1050,28 @@ def fetchSchema(srcCols,key, producer,spark_logger):
 
 def processData(spark,mapping, srcMap, schemaMap, trgtMap, queryMap,joinCondition,filterCondition,partitionByMap, key,producer,spark_logger, jsonSchemaMap, validationFlag):
     # TODO find alternative to any and restrict it to one row using tail head etc
-    isSuccess=False
     comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","The process mapping of the current process is :: " +mapping)
-    if mapping== "One_to_One" or mapping== "One_to_Many":
-        if comutils.moveDataToProcessingZone(config,srcMap,key,producer,spark_logger):
-            isSuccess=singleSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap,filterCondition,partitionByMap,key,producer, spark_logger, jsonSchemaMap, validationFlag)
-        if isSuccess :
-            comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Moving data from processing zone to Success")
-            isMoved=comutils.moveData("success",config,srcMap,key,producer,spark_logger)
-            #TODO : How to handle data that failed to be moved to success folder
-            if not isMoved:
-                isSuccess = False
-                comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Failed to move data from processing zone to Success")
-        else :
-            comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Moving data from processing zone to ::ERROR-Folder ::")
-            comutils.moveData("error",config,srcMap,key,producer,spark_logger)    
-    elif mapping == "Many_to_One"  :
-        isSuccess=multiSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap,joinCondition,filterCondition,partitionByMap,key,producer, spark_logger, jsonSchemaMap, validationFlag)
-    elif mapping == "Many_to_Many" :
+    comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Moving data from processing zone to Success")
+    isMoved=comutils.moveDataToProcessingZone(config,srcMap,key,producer,spark_logger)
+    isProcessed=False
+    if (mapping== "One_to_One" or mapping== "One_to_Many") and isMoved:
+        isProcessed = singleSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap,filterCondition,partitionByMap,key,producer, spark_logger, jsonSchemaMap, validationFlag) 
+    elif mapping == "Many_to_One" and isMoved :
+        isProcessed = multiSrcPrc(spark,srcMap, schemaMap, trgtMap, queryMap,joinCondition,filterCondition,partitionByMap,key,producer, spark_logger, jsonSchemaMap, validationFlag)
+    elif mapping == "Many_to_Many" and isMoved :
         print("in "+mapping)
+        
+    if isMoved and isProcessed:
+        isSuccess=comutils.moveData("success",config,srcMap,key,producer,spark_logger)
+        #TODO : How to handle data that failed to be moved to success folder
+        if not isSuccess:
+            comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Failed to move data from processing zone to Success")
+    else :
+        comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Moving data from processing zone to ::ERROR-Folder ::")
+        comutils.moveData("error",config,srcMap,key,producer,spark_logger)        
     
-    return isSuccess
+    print("the return value is :::::"+str(isMoved and isProcessed))
+    return isMoved and isProcessed
 
 
 
