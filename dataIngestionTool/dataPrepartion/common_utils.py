@@ -78,7 +78,9 @@ def moveDataToProcessingZone(config,srcMap,key,producer,spark_logger):
                 isSuccess=moveAcrossHDFS("input",srcKey,src['srcLocation'].any(),config,key,producer,spark_logger)
             else :
                 #TODO add remote,ftp,scp options
-                print ("srcType not mentioned")     
+                print ("srcType not mentioned")  
+            if not isSuccess :
+                break                       
         return isSuccess
     except Exception as ex :
         publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in moveDataToProcessingZone()")
@@ -118,7 +120,6 @@ def moveToHDFS(dirType,srcDestId,localsrc,config,key,producer,spark_logger):
        return True
     except Exception as ex:
         publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in moveToHDFS()")
-        publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The exception occurred for Src Id :: " )
         publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(ex))
         publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())
         return False

@@ -24,7 +24,7 @@ def execute_valid_process():
         module.main('config/config.cnf', prcs, pool)
 
 
-def delete_dest_dir(cls):
+def prepare_dirs(cls):
     if os.path.exists(cls.config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV')):
         shutil.rmtree(cls.config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV'))   
     
@@ -33,12 +33,14 @@ def delete_dest_dir(cls):
 
     
     if os.path.exists(cls.config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_WAREHOUSE')):
-            shutil.rmtree(cls.config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_WAREHOUSE'))
+        shutil.rmtree(cls.config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_WAREHOUSE'))
         
     if os.path.exists(cls.config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_DERBY')):
-            shutil.rmtree(cls.config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_DERBY'),ignore_errors=True)  
-        
- 
+        shutil.rmtree(cls.config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_DERBY'),ignore_errors=True)  
+    #Move test data files to landing folder    
+    if os.path.exists(cls.config.get('DIT_TEST_CASE_config', 'TEXT_FILE_LANDING_FOLDER')):
+        shutil.rmtree(cls.config.get('DIT_TEST_CASE_config', 'TEXT_FILE_LANDING_FOLDER'))
+        shutil.copytree(cls.config.get('DIT_TEST_CASE_config', 'TEXT_FILE_DATA_PREP_FOLDER'), cls.config.get('DIT_TEST_CASE_config', 'TEXT_FILE_LANDING_FOLDER'))
 
 class Test(unittest.TestCase):
 
@@ -50,7 +52,7 @@ class Test(unittest.TestCase):
         cls.config = ConfigParser()
         cls.config.read('config/config.cnf')
         os.environ["SPARK_CONF_DIR"] = cls.config.get('DIT_TEST_CASE_config', 'SPARK_CONF_DIR_CSV')
-        delete_dest_dir(cls)
+        prepare_dirs(cls)
         modulePath = os.path.join(os.path.abspath("../dataPrepartion"),'common_utils.py')
         print("Adding module py file ::"+modulePath+" to Spark context")
         cls.spark = pyspark.sql.SparkSession.builder.appName("Test_Csv_To_Csv").enableHiveSupport().getOrCreate()
@@ -69,7 +71,7 @@ class Test(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.spark.stop()
-        delete_dest_dir(cls)
+        prepare_dirs(cls)
         print("tearDownClass")      
 
     '''

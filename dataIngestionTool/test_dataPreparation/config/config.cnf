@@ -21,6 +21,8 @@ LOG_DIR=C:/Users/sk250102/Documents/Teradata/DIT/DataIngestionTool/test_dataInge
 
 
 [DIT_TEST_CASE_config]
+TEXT_FILE_LANDING_FOLDER = TestFiles/TestCsvToCsv/source
+TEXT_FILE_DATA_PREP_FOLDER = TestFiles/TestCsvToCsv/testPrepData
 SPARK_CONF_DIR_CSV = TestFiles/TestCsvToCsv/conf
 DEST_LOC_CSV = TestFiles/TestCsvToCsv/destLoc/
 SRC_LOC_CSV = TestFiles/TestCsvToCsv/category_quote.csv
