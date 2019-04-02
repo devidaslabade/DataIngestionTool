@@ -1176,7 +1176,6 @@ def prepareSchema(destColMap):
 
 def processFiles(argTuple):
     # spark = pyspark.sql.SparkSession.builder.appName("DataIngestion").enableHiveSupport().getOrCreate()
-    isProcessed=False
     try:
         prc = pd.read_json(argTuple[0])
         #instantiate Kafka Producer
@@ -1186,13 +1185,17 @@ def processFiles(argTuple):
             spark_logger = logg.Log4j(argTuple[1],key)
             try:                
                 startTS=datetime.datetime.now().replace(microsecond=0)
+                isProcessed=False
                 comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Started processing "+prcRow['prcId']+" at "+str(startTS))
                 if prcRow.get('queryProvided') == "True" :
                     isProcessed=executeQuery(argTuple[1], prcRow,key,producer,spark_logger)                
                 else :
-                    prepareMeta(argTuple[1], prcRow,key,producer,spark_logger) #TODO set return type
-                comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Finished processing "+prcRow['prcId']) 
-                comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Total time taken to process "+prcRow['prcId']+" is "+ str(datetime.datetime.now().replace(microsecond=0)-startTS))
+                    isProcessed=prepareMeta(argTuple[1], prcRow,key,producer,spark_logger) #TODO set return type
+                if isProcessed :
+                    comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Finished processing "+prcRow['prcId']) 
+                    comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Total time taken to process "+prcRow['prcId']+" is "+ str(datetime.datetime.now().replace(microsecond=0)-startTS))
+                else :
+                    comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Error occurred while processing "+prcRow['prcId'])    
             except Exception as e:
                 comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in processFiles() while processing process ID :: "+prcRow['prcId'])
                 comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(e))
