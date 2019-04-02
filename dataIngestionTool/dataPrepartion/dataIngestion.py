@@ -1051,7 +1051,7 @@ def fetchSchema(srcCols,key, producer,spark_logger):
 def processData(spark,mapping, srcMap, schemaMap, trgtMap, queryMap,joinCondition,filterCondition,partitionByMap, key,producer,spark_logger, jsonSchemaMap, validationFlag):
     # TODO find alternative to any and restrict it to one row using tail head etc
     comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","The process mapping of the current process is :: " +mapping)
-    comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Moving data from processing zone to Success")
+
     isMoved=comutils.moveDataToProcessingZone(config,srcMap,key,producer,spark_logger)
     isProcessed=False
     if (mapping== "One_to_One" or mapping== "One_to_Many") and isMoved:
@@ -1062,6 +1062,7 @@ def processData(spark,mapping, srcMap, schemaMap, trgtMap, queryMap,joinConditio
         print("in "+mapping)
         
     if isMoved and isProcessed:
+        comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Moving data from processing zone to Success")
         isSuccess=comutils.moveData("success",config,srcMap,key,producer,spark_logger)
         #TODO : How to handle data that failed to be moved to success folder
         if not isSuccess:

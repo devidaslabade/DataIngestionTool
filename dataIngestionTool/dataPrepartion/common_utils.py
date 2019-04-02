@@ -90,19 +90,17 @@ def moveDataToProcessingZone(config,srcMap,key,producer,spark_logger):
         return False
 
 def moveData(subFolderName,config,srcMap,key,producer,spark_logger):
-        try :
-            
-            for srcKey, src in srcMap.items():
-                srcLocation= dirPathGen("input",srcKey,producer,config,spark_logger,key)
-                destLocation= dirPathGen(subFolderName,srcKey,producer,config,spark_logger,key)
-                moveAcrossHDFS(srcLocation,destLocation,producer,config,spark_logger,key)
-            return True
-        except Exception as ex :
-            publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in moveData()")
-            publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR"," The exception occurred for Src Id :: " )
-            publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(ex))
-            publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())  
-            return Flase
+    try :
+        for srcKey, src in srcMap.items():
+            srcLocation= dirPathGen("input",srcKey,producer,config,spark_logger,key)
+            destLocation= dirPathGen(subFolderName,srcKey,producer,config,spark_logger,key)
+            moveAcrossHDFS(srcLocation,destLocation,producer,config,spark_logger,key)
+        return True
+    except Exception as ex :
+        publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception occurred in moveData()")
+        publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR","Exception::msg %s" % str(ex))
+        publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"ERROR",traceback.format_exc())  
+        return Flase
             
 def moveToHDFS(dirType,srcDestId,localsrc,config,key,producer,spark_logger):
     try:
