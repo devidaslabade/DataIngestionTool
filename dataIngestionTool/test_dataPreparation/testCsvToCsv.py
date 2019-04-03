@@ -18,8 +18,8 @@ except:
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print("+++++++++++++++++++++Executing Test cases with source as Delimited Text +++++++++++++++++++++++")
-        #prcs = "(prc_PrcId_1.json|prc_PrcId_2.json|prc_PrcId_3.json|prc_PrcId_10.json|prc_PrcId_11.json|prc_PrcId_20.json|prc_PrcId_21.json|prc_PrcId_22.json|prc_PrcId_23.json|prc_PrcId_24.json)"
-        prcs = "(prc_PrcId_2.json)"
+        prcs = "(prc_PrcId_1.json|prc_PrcId_2.json|prc_PrcId_3.json|prc_PrcId_10.json|prc_PrcId_11.json|prc_PrcId_20.json|prc_PrcId_21.json|prc_PrcId_22.json|prc_PrcId_23.json|prc_PrcId_24.json)"
+        #prcs = "(prc_PrcId_24.json)"
         pool = 3
         module.main('config/config.cnf', prcs, pool)
 
@@ -74,11 +74,14 @@ class Test(unittest.TestCase):
         prepare_dirs(cls)
         print("tearDownClass")      
 
-    '''
-    Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
-    '''
-    @unittest.skip("demonstrating skipping")    
+
+    #@unittest.skip("demonstrating skipping")    
     def test_PrcId_1(self):
+        """
+        Test case for checking functionality of 
+                TODO : Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
+        
+        """
         print("Validating test result of PrcId_1")
         observedDF = self.spark.read.json(self.config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip()+"/DestId_1_json/json/")
         obsCount=observedDF.count()
@@ -90,11 +93,13 @@ class Test(unittest.TestCase):
 
 
 
-    '''
-    Read from a file, filter the data, transform data of one of the columns using SQL function, save the output in compressed file format
-    '''
     #@unittest.skip("demonstrating skipping")   
     def test_PrcId_2(self):
+        """
+        Test case for checking functionality of 
+                TODO : Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
+        
+        """
         print("Validating test result of PrcId_2")
         isValid=False
         destDir=self.config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip()+"/DestId_2_json/json/"
@@ -109,11 +114,14 @@ class Test(unittest.TestCase):
 
 
 
-    '''
-    Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
-    '''
-    @unittest.skip("demonstrating skipping")
+    #@unittest.skip("demonstrating skipping")
     def test_PrcId_3(self):
+        """
+        Test case for checking functionality of 
+        
+
+        
+        """
         print("Validating test result of PrcId_3")
         observedDF = self.spark.read.json(self.config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip()+"/DestId_3_json/json/")
         obsCount=observedDF.show()
@@ -126,8 +134,12 @@ class Test(unittest.TestCase):
 
         
         
-    @unittest.skip("demonstrating skipping")    
+    #@unittest.skip("demonstrating skipping")    
     def test_PrcId_10(self):
+        """
+        Test case for checking functionality of 
+        
+        """
         print("Validating test result of PrcId_10")
         # Read from Hive
         df_load = self.spark.sql('select cat_name from fin_tab_dest10 where dept_name="Fitness" and cat_id=7')
@@ -138,8 +150,12 @@ class Test(unittest.TestCase):
      
         
           
-    @unittest.skip("demonstrating skipping") 
+    #@unittest.skip("demonstrating skipping") 
     def test_PrcId_11(self):
+        """
+        Test case for checking functionality of 
+        
+        """
         print("Validating test result of PrcId_11")
         conn = sqlite3.connect(self.config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_JDBC'))
         cursor = conn.cursor()
@@ -150,8 +166,12 @@ class Test(unittest.TestCase):
         print(resultSet)
         self.assertEqual('Soccer', resultSet[0][0])
 
-    @unittest.skip("demonstrating skipping")
+    #@unittest.skip("demonstrating skipping")
     def test_PrcId_20(self):
+        """
+        Test case for checking functionality of custom delimiter and quote character.
+        
+        """
         print("Validating test result of PrcId_20")
         flag = False
         sFlag = False
@@ -180,24 +200,37 @@ class Test(unittest.TestCase):
         print("Final value::"+str(tFlag))
         self.assertTrue(tFlag)
 
-    @unittest.skip("demonstrating skipping")
+    #@unittest.skip("demonstrating skipping")
     def test_PrcId_21(self):
+        """
+        Test case for checking functionality of custom delimiter with ASCII values
+        
+        """
         print("Validating test result of PrcId_21")
         observedDF = self.spark.read.json(self.config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_21_json/json/")
         filteredCount = observedDF.count()
         print("The count of filtered records is :: " + str(filteredCount))
         self.assertEqual(4, filteredCount)
 
-    @unittest.skip("demonstrating skipping")
+
+    #@unittest.skip("demonstrating skipping")
     def test_PrcId_22(self):
+        """
+        Test case for checking functionality of custom delimiter with ASCII values
+        
+        """
         print("Validating test result of PrcId_22")
         observedDF = self.spark.read.format("csv").option("delimiter","|").load(self.config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip() + "/DestId_22_csv/csv/")
         filteredCount = len(observedDF.columns)
         print("The count of filtered records is :: " + str(filteredCount))
         self.assertEqual(3, filteredCount)
 
-    @unittest.skip("demonstrating skipping")
+    #@unittest.skip("demonstrating skipping")
     def test_PrcId_23(self):
+        """
+        Test case for checking functionality of data validation with output as text files
+        
+        """
         print("Validating test result of PrcId_23")
         flag = False
         validFlag = False
@@ -220,8 +253,13 @@ class Test(unittest.TestCase):
         print("Final value of test case result :: " + str(flag))
         self.assertTrue(flag)
 
-    @unittest.skip("demonstrating skipping")
+
+    #@unittest.skip("demonstrating skipping")
     def test_PrcId_24(self):
+        """
+        Test case for checking functionality of 
+        
+        """
         print("Validating test result of PrcId_24")
         conn = sqlite3.connect(self.config.get('DIT_TEST_CASE_config', 'DB_LOC_CSV_JDBC'))
         cursor = conn.cursor()

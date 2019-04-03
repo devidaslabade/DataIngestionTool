@@ -116,6 +116,12 @@ class Test(unittest.TestCase):
     '''
     #@unittest.skip("demonstrating skipping")
     def test_PrcId_4(self):
+        """
+        Test case for checking functionality of 
+        
+
+        
+        """
         print("Validating test result of PrcId_4")
         cursor = self.conn.cursor()     
         resultSet=cursor.execute("select job from Dest_4 where deptName='ACCOUNTING' and salary=5000").fetchall()
@@ -129,6 +135,12 @@ class Test(unittest.TestCase):
     '''
     #@unittest.skip("demonstrating skipping")     
     def test_PrcId_5(self):
+        """
+        Test case for checking functionality of 
+        
+
+        
+        """
         print("Validating test result of PrcId_5")        
         cursor = self.conn.cursor()     
         resultSet=cursor.execute('select salary from Dest_5 where departmentNo=20 and employeeName="ADAMS"').fetchall()        
@@ -143,6 +155,12 @@ class Test(unittest.TestCase):
     '''
     #@unittest.skip("demonstrating skipping")
     def test_PrcId_6(self):
+        """
+        Test case for checking functionality of 
+        
+
+        
+        """
         print("Validating test result of PrcId_6")
         cursor = self.conn.cursor()     
         resultSet=cursor.execute('select empCount from Dest_6 where loc="BOSTON"').fetchall()        
@@ -156,6 +174,12 @@ class Test(unittest.TestCase):
         
     #@unittest.skip("demonstrating skipping")    
     def test_PrcId_14(self):
+        """
+        Test case for checking functionality of 
+        
+
+        
+        """
         print("Validating test result of PrcId_14")
         # Read from Hive
         df_load = self.spark.sql('select employeeName from fin_tab_dest14 where deptName = "ACCOUNTING" and job = "CLERK"')
@@ -166,6 +190,12 @@ class Test(unittest.TestCase):
      
     #@unittest.skip("demonstrating skipping")         
     def test_PrcId_15(self):
+        """
+        Test case for checking functionality of 
+        
+
+        
+        """
         print("Validating test result of PrcId_15")
         observedDF = self.spark.read.orc(config.get('DIT_TEST_CASE_config', 'DEST_LOC_JDBC').strip()+"/DestId_15_orc/orc/")
         #obsCount=observedDF.show()

@@ -79,6 +79,12 @@ class Test(unittest.TestCase):
     '''
     #@unittest.skip("demonstrating skipping") 
     def test_PrcId_16(self):
+        """
+        Test case for checking functionality of 
+        
+
+        
+        """
         print("Validating test result of PrcId_16")  
         isValid=False
         destDir=config.get('DIT_TEST_CASE_config', 'DEST_LOC_FXDWDTH').strip()+"/DestId_16_json/json/"
@@ -99,6 +105,12 @@ class Test(unittest.TestCase):
     '''
     #@unittest.skip("demonstrating skipping")     
     def test_PrcId_17(self):
+        """
+        Test case for checking functionality of 
+        
+
+        
+        """
         print("Validating test result of PrcId_9")
         # Read from Hive
         df_load = self.spark.sql('select cat_id from fin_tab_dest17 where status="Resolved"')
@@ -112,6 +124,12 @@ class Test(unittest.TestCase):
         
     #@unittest.skip("demonstrating skipping")    
     def test_PrcId_18(self):
+        """
+        Test case for checking functionality of 
+        
+
+        
+        """
         print("Validating test result of PrcId_18")
         # Read from Hive
         df_load = self.spark.sql('select assigned_to from fin_tab_dest18 where status="Assigned"')
@@ -124,6 +142,12 @@ class Test(unittest.TestCase):
 
     #@unittest.skip("demonstrating skipping")    
     def test_PrcId_19(self):
+        """
+        Test case for checking functionality of 
+        
+
+        
+        """
         print("Validating test result of PrcId_19")
         conn = sqlite3.connect(config.get('DIT_TEST_CASE_config', 'DB_LOC_FXDWDTH_JDBC'))
         cursor = conn.cursor()

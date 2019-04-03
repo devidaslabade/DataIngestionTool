@@ -72,11 +72,15 @@ class Test(unittest.TestCase):
         delete_dest_dir(cls)
         print("tearDownClass")      
 
-    '''
-    Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
-    '''
+
     #@unittest.skip("demonstrating skipping")    
     def test_PrcId_25(self):
+        """
+        Test case for checking functionality of 
+        
+
+        
+        """
         print("Validating test result of PrcId_1")
         #observedDF = self.spark.read.json(self.config.get('DIT_TEST_CASE_config', 'DEST_LOC_CSV').strip()+"/DestId_1_json/json/")
         #obsCount=observedDF.count()

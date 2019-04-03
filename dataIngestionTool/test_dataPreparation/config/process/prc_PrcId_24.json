@@ -1,3 +1,3 @@
 [
-{"prcId" : "PrcId_24", "prcName":"TestDump_24","isActive":"True","mapId":"cm_24","joinCol":"SrcId_1:2=SrcId_2:1","validation":"True"}
+{"prcId" : "PrcId_24", "prcName":"TestDump_24","isActive":"True","mapId":"cm_24","joinCol":"SrcId_18:2=SrcId_19:1","validation":"True"}
 ]

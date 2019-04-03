@@ -1,0 +1,3 @@
+[
+{"srcId":"SrcId_16","srcType":"local","srcLocation":"TestFiles/TestCsvToCsv/source/dept_prc_11.csv","fileType":"csv","inferSchema":"false","header":"false","delimiter":","}
+]

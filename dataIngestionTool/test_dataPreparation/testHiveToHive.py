@@ -136,6 +136,12 @@ class Test(unittest.TestCase):
     '''
     #@unittest.skip("demonstrating skipping") 
     def test_PrcId_7(self):
+        """
+        Test case for checking functionality of 
+        
+
+        
+        """
         print("Validating test result of PrcId_7")
         # Read from Hive
         df_load = self.spark.sql('select job from fin_tab_dest7 where deptName="ACCOUNTING" and salary=5000')
@@ -150,6 +156,12 @@ class Test(unittest.TestCase):
     '''
     #@unittest.skip("demonstrating skipping") 
     def test_PrcId_8(self):
+        """
+        Test case for checking functionality of 
+        
+
+        
+        """
         print("Validating test result of PrcId_8")        
         # Read from Hive
         df_load = self.spark.sql('select salary from fin_tab_dest8 where departmentNo=20 and employeeName="JONES"')
@@ -164,6 +176,12 @@ class Test(unittest.TestCase):
     '''
     #@unittest.skip("demonstrating skipping")     
     def test_PrcId_9(self):
+        """
+        Test case for checking functionality of 
+        
+
+        
+        """
         print("Validating test result of PrcId_9")
         # Read from Hive
         df_load = self.spark.sql('select empCount from fin_tab_dest9 where loc="CHICAGO"')
@@ -177,6 +195,12 @@ class Test(unittest.TestCase):
         
     #@unittest.skip("demonstrating skipping")    
     def test_PrcId_12(self):
+        """
+        Test case for checking functionality of 
+        
+
+        
+        """
         print("Validating test result of PrcId_12")
         conn = sqlite3.connect(config.get('DIT_TEST_CASE_config', 'DB_LOC_HIVE_JDBC'))
         cursor = conn.cursor()
@@ -192,6 +216,12 @@ class Test(unittest.TestCase):
 
     #@unittest.skip("demonstrating skipping")    
     def test_PrcId_13(self):
+        """
+        Test case for checking functionality of 
+        
+
+        
+        """
         print("Validating test result of PrcId_13")
         observedDF = self.spark.read.json(config.get('DIT_TEST_CASE_config', 'DEST_LOC_HIVE').strip()+"/DestId_13_json/json/")
         #obsCount=observedDF.show()
