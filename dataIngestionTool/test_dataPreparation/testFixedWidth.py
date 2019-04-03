@@ -25,8 +25,8 @@ config.read('config\\config.cnf')
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print("+++++++++++++++++++++Executing Test cases with source as Fixed Width Files+++++++++++++++++++++++")
-        #prcs = "(prc_PrcId_1.json|prc_PrcId_19.json)"
-        prcs = "(prc_PrcId_16.json|prc_PrcId_17.json|prc_PrcId_18.json|prc_PrcId_19.json)"
+        prcs = "(prc_PrcId_16.json)"
+        #prcs = "(prc_PrcId_16.json|prc_PrcId_17.json|prc_PrcId_18.json|prc_PrcId_19.json)"
         pool = 3
         module.main('config\\config.cnf', prcs, pool)
 
@@ -42,6 +42,11 @@ def delete_dest_dir():
         
     if os.path.exists(config.get('DIT_TEST_CASE_config', 'DB_LOC_FXDWDTH_DERBY')):
             shutil.rmtree(config.get('DIT_TEST_CASE_config', 'DB_LOC_FXDWDTH_DERBY'),ignore_errors=True)  
+            
+     #Move test data files to landing folder    
+    if os.path.exists(config.get('DIT_TEST_CASE_config', 'FXDWDTH_FILE_LANDING_FOLDER')):
+        shutil.rmtree(config.get('DIT_TEST_CASE_config', 'FXDWDTH_FILE_LANDING_FOLDER'))
+    shutil.copytree(config.get('DIT_TEST_CASE_config', 'FXDWDTH_FILE_DATA_PREP_FOLDER'), config.get('DIT_TEST_CASE_config', 'FXDWDTH_FILE_LANDING_FOLDER'))        
         
 
 class Test(unittest.TestCase):
@@ -103,7 +108,7 @@ class Test(unittest.TestCase):
     '''
     Read from files, perform inner join, filter records, and then add an extra column with some default/constant value or SQL function.
     '''
-    #@unittest.skip("demonstrating skipping")     
+    @unittest.skip("demonstrating skipping")     
     def test_PrcId_17(self):
         """
         Test case for checking functionality of 
@@ -122,7 +127,7 @@ class Test(unittest.TestCase):
 
         
         
-    #@unittest.skip("demonstrating skipping")    
+    @unittest.skip("demonstrating skipping")    
     def test_PrcId_18(self):
         """
         Test case for checking functionality of 
@@ -140,7 +145,7 @@ class Test(unittest.TestCase):
         
           
 
-    #@unittest.skip("demonstrating skipping")    
+    @unittest.skip("demonstrating skipping")    
     def test_PrcId_19(self):
         """
         Test case for checking functionality of 

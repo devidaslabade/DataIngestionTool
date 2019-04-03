@@ -1,3 +1,3 @@
 [
-{"srcId":"SrcId_3","srcType":"local","srcLocation":"TestFiles/TestFixedWidth/fixed-width-sample.data","fileType":"fixedWidth","recordSize":28 }
+{"srcId":"SrcId_3","srcType":"local","srcLocation":"TestFiles/TestFixedWidth/source/fixed-width-sample.data","fileType":"fixedWidth","recordSize":28 }
 ]

@@ -49,7 +49,8 @@ DEST_LOC_FXDWDTH = TestFiles/TestFixedWidth/destLoc
 DB_LOC_FXDWDTH_JDBC = TestFiles/TestFixedWidth/fixedWidthtest.db
 DB_LOC_FXDWDTH_WAREHOUSE = TestFiles/TestFixedWidth/warehouse
 DB_LOC_FXDWDTH_DERBY = TestFiles/TestFixedWidth/derby
-
+FXDWDTH_FILE_LANDING_FOLDER = TestFiles/TestFixedWidth/source
+FXDWDTH_FILE_DATA_PREP_FOLDER = TestFiles/TestFixedWidth/testPrepData
 
 SPARK_CONF_DIR_INCREMENTAL = TestFiles/TestIncrementalFeatures/conf
 DEST_LOC_INCREMENTAL = TestFiles/TestIncrementalFeatures/destLoc

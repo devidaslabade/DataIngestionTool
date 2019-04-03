@@ -80,7 +80,7 @@ def prepareTPTScript(spark,srcMap, schemaMap, destMap, queryMap, spark_logger):
             print(traceback.format_exc())
 
 
-def fixedWidthProcessor(src,schemaStruct,spark,key,producer, spark_logger):
+def fixedWidthProcessor(srcLocation,src,schemaStruct,spark,key,producer, spark_logger):
     try:
         recordSize=src.get('recordSize')[0].item() if src.get('recordSize') is not None else 0                
         posColmap={}
@@ -110,9 +110,9 @@ def fixedWidthProcessor(src,schemaStruct,spark,key,producer, spark_logger):
         ## Comment the above line till fldNames and uncomment the previous approach in future releases.
         fxdwdthDf=None
         if recordSize == 0 :            
-            fxdwdthDf=spark.read.text(src['srcLocation'].any())
+            fxdwdthDf=spark.read.text(srcLocation)
         else :
-            fxdwdthDf=spark.read.text(src['srcLocation'].any()).filter("length(value) = "+str(recordSize))                
+            fxdwdthDf=spark.read.text(srcLocation).filter("length(value) = "+str(recordSize))                
         fxdwdthDf.show(truncate=False)
         splitColDf=fxdwdthDf.selectExpr(query.format(regexExpr,itemExpr[:-1])) #.write.saveAsTable('fixedWidth_'+src['srcId'].any())                              
         finDf=splitColDf.selectExpr(collst)
@@ -239,7 +239,7 @@ def singleSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,filterCondition,part
                     df = spark.read.format("csv").option("header", src['header'].any()).option("delimiter", delimiter).option("quote", quote).option("inferSchema", src.get('inferSchema').str.cat().lower()).load(srcLocation)
             elif src['fileType'].any() == "fixedWidth":
                 comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+srcLocation)
-                df=fixedWidthProcessor(src,schemaMap[srcKey],spark,key,producer, spark_logger)
+                df=fixedWidthProcessor(srcLocation,src,schemaMap[srcKey],spark,key,producer, spark_logger)
                 df.show(truncate=False)
             elif src['fileType'].any() == "hivetable":
                 comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from table "+src["table"].any())
@@ -553,7 +553,7 @@ def multiSrcPrc(spark,srcMap, schemaMap, destMap, queryMap,joinCondition,filterC
                     df = spark.read.format("csv").option("header", src['header'].any()).option("delimiter", delimiter).option("quote", quote).option("inferSchema", src.get('inferSchema').str.cat().lower()).load(srcLocation)
             elif src['fileType'].any() == "fixedWidth":
                 comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from "+srcLocation)
-                df=fixedWidthProcessor(src,schemaMap[srcKey],spark,key,producer, spark_logger)                
+                df=fixedWidthProcessor(srcLocation,src,schemaMap[srcKey],spark,key,producer, spark_logger)                
                 df.show(truncate=False)
             elif src['fileType'].any() == "hivetable":
                 comutils.publishKafka(producer,config.get('DIT_Kafka_config', 'TOPIC'),spark_logger,key,"INFO","Reading data in format : "+src['fileType'].any()+" for source "+ src['srcId'].any() +"  from table "+src["table"].any())

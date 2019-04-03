@@ -40,7 +40,7 @@ def prepare_dirs(cls):
     #Move test data files to landing folder    
     if os.path.exists(cls.config.get('DIT_TEST_CASE_config', 'TEXT_FILE_LANDING_FOLDER')):
         shutil.rmtree(cls.config.get('DIT_TEST_CASE_config', 'TEXT_FILE_LANDING_FOLDER'))
-        shutil.copytree(cls.config.get('DIT_TEST_CASE_config', 'TEXT_FILE_DATA_PREP_FOLDER'), cls.config.get('DIT_TEST_CASE_config', 'TEXT_FILE_LANDING_FOLDER'))
+    shutil.copytree(cls.config.get('DIT_TEST_CASE_config', 'TEXT_FILE_DATA_PREP_FOLDER'), cls.config.get('DIT_TEST_CASE_config', 'TEXT_FILE_LANDING_FOLDER'))
 
 class Test(unittest.TestCase):
 
