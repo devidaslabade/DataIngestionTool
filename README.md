@@ -1,6 +1,6 @@
 # DataIngestionTool
 
-## Packaging steps (WIP)
+### Packaging steps (WIP)
 Check if pip exists, if it is not installed then follow the instruction at  https://pip.pypa.io/en/stable/installing/
 
 Also, check if setuptools is installed on the system which will be used to package the utility. \
@@ -24,7 +24,7 @@ python setup.py bdist_wheel \
 
 
 
-## Step to execute the Module
+### Step to execute the Module
 
 
 For help :
@@ -112,7 +112,16 @@ Multiple Data sources can be joined to combine the results into one before publi
 The data set can be filtered before being published to destination. The json element syntax to be added in process file is ***"filterCondition":"SrcId_2:2@='Fitness'"***. Where the filterCondition means that SrcId_2's column Id 2 should be equal to "Fitness".
 
 
-### 	
+### Data Validation through Json Schema
+End user can configure the validation parameter in process tab while injecting the data. If validation parameter is configured to “true” than based on the below configuration validation will be performed. Invalidated data is placed in a separate directory as per the destination location. 
+
+Following is the list of rules for the source column which can be configured using which schema is prepared for validation:
+* required: true or false (If set to true for a column, source data must have value for this column else this will be treated is invalid data)
+* type: Data type of the column(Support for String, Int, Long, Float, Double, Boolean, Timestamp(Considered as String))
+* minimum: Minimum value for a numeric datatype
+* maximum: Maximum value for a numeric datatype
+* minLength: Minimum Length value for a string datatype
+* maxLength: Maximum Length value for a string datatype	
 
 
 ### Supported SQL functions 

@@ -1,0 +1,5 @@
+[
+ 	{ "srcId":"SrcId_22","colName":"category_id","colType":"Int","isNullable":"True","colPos":"1","length":"9","colId":"1"},
+	{ "srcId":"SrcId_22","colName":"category_department_id","colType":"Int","isNullable":"True","colPos":"2","length":"14","colId":"2"},
+	{ "srcId":"SrcId_22","colName":"category_name","colType":"String","isNullable":"False","colPos":"3","length":"5","colId":"3"}
+]

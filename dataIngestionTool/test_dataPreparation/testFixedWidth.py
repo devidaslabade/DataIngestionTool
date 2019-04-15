@@ -25,7 +25,7 @@ config.read('config\\config.cnf')
 def execute_valid_process():
         module = importlib.import_module('dataPrepartion.dataIngestion')
         print("+++++++++++++++++++++Executing Test cases with source as Fixed Width Files+++++++++++++++++++++++")
-        prcs = "(prc_PrcId_16.json)"
+        prcs = "(prc_PrcId_18.json)"
         #prcs = "(prc_PrcId_16.json|prc_PrcId_17.json|prc_PrcId_18.json|prc_PrcId_19.json)"
         pool = 3
         module.main('config\\config.cnf', prcs, pool)
@@ -82,7 +82,7 @@ class Test(unittest.TestCase):
     '''
     Read from a file, filter the data, transform data of one of the columns using SQL function, save the output in compressed file format
     '''
-    #@unittest.skip("demonstrating skipping") 
+    @unittest.skip("demonstrating skipping") 
     def test_PrcId_16(self):
         """
         Test case for checking functionality of 
@@ -116,7 +116,7 @@ class Test(unittest.TestCase):
 
         
         """
-        print("Validating test result of PrcId_9")
+        print("Validating test result of PrcId_17")
         # Read from Hive
         df_load = self.spark.sql('select cat_id from fin_tab_dest17 where status="Resolved"')
         df_load.show()
@@ -127,7 +127,7 @@ class Test(unittest.TestCase):
 
         
         
-    @unittest.skip("demonstrating skipping")    
+    #@unittest.skip("demonstrating skipping")    
     def test_PrcId_18(self):
         """
         Test case for checking functionality of 

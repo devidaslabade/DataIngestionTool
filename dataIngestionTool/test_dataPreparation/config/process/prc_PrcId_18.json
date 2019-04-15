@@ -1,3 +1,3 @@
 [
-{"prcId" : "PrcId_18", "prcName":"TestDump_18","isActive":"True","mapId":"cm_18","joinCol":"SrcId_3:1=SrcId_6:1" ,"filterCondition":"SrcId_6:2@='Assigned'"}
+{"prcId" : "PrcId_18", "prcName":"TestDump_18","isActive":"True","mapId":"cm_18","joinCol":"SrcId_22:1=SrcId_24:1" ,"filterCondition":"SrcId_24:2@='Assigned'"}
 ]
